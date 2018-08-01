@@ -4,34 +4,34 @@
 
 
 ## 一、基础知识
-[Spark概述及快速入门](slides/spark_basics/spark_basics_and_quick_start.html)  
-[基于Maven在IDE中开发Spark应用]()
+### 🍎 1. [Spark概述及快速入门指南](slides/spark_basics/spark_basics_and_quick_start.html)  
+### 🍏 2. [基于Maven在IDE中开发Spark应用]()
 
 ## 二、 Spark Core
-- [RDD]()  
-- [Spark On YARN]()
+### 🍏 [RDD]()  
+### 🍏 [Spark On YARN]()
 
 
 ## 三、 Spark SQL
-- [DataFrame/Dataset]()
-- [Spark SQL与Hive集成]()   
-- [Spark SQL UDF]()
-- [如何优化Spark SQL执行过程]()  
-- [Spark SQL Catalyst工作原理详解]()  
-- [Spark SQL Cost Based Optimization详解]()  
-- [Spark SQL Thrift Server详解]()  
-- [Spark SQL 操作各种数据源]()  
-- [Spark SQL 参数详解及调优]()
+### 🍏 [DataFrame/Dataset]()
+### 🍏 [Spark SQL与Hive集成]()   
+### 🍏 [Spark SQL UDF]()
+### 🍏 [如何优化Spark SQL执行过程]()  
+### 🍏 [Spark SQL Catalyst工作原理详解]()  
+### 🍏 [Spark SQL Cost Based Optimization详解]()  
+### 🍏 [Spark SQL Thrift Server详解]()  
+### 🍏 [Spark SQL 操作各种数据源]()  
+### 🍏 [Spark SQL 参数详解及调优]()
 
 ## 四、 Spark Streaming
-- [大数据处理的类型、流计算的框架及内容概要]()  
-- [SparkStreaming是什么及数据处理流程]()
-- [Spark Streaming集成Kafka]()
-- [Spark Streaming集成Flume]()
+### 🍏 [大数据处理的类型、流计算的框架及内容概要]()  
+### 🍏 [SparkStreaming是什么及数据处理流程]()
+### 🍏 [Spark Streaming集成Kafka]()
+### 🍏 [Spark Streaming集成Flume]()
 
 
 ## 五、 Spark Structured Streaming
-- [Spark Structured Streaming Basics](https://yaooqinn.github.io/sugar/slides/StructuedStreamingBasics.html#1) 
+### 🍎 [Spark Structured Streaming Basics](https://yaooqinn.github.io/sugar/slides/StructuedStreamingBasics.html#1) 
 
 ## 六、 Spark Machine Learning
 
@@ -40,9 +40,9 @@
 ## 八、 R on Spark
 
 ## 九、 Mammut Spark 数据开发
-- [如何使用猛犸Spark进行数据开发]() 
-- [如何使用猛犸进行ETL开发]()
-- [如何使用猛犸Spark Streaming任务开发及调优]()
+### 🍏 [如何使用猛犸Spark进行数据开发]() 
+### 🍏 [如何使用猛犸进行ETL开发]()
+### 🍏 [如何使用猛犸Spark Streaming任务开发及调优]()
 
 ## 十、 Mammut Spark 自助分析
 
