@@ -182,6 +182,18 @@ name: agenda
 
   ** 如何提升Spark技能？ **<br>
 
+???
+
+备注: 目录<br>
+
+本TOPIC从最基本的方面讲解Spark入门所需具备的入手手段<br>
+
+内容尽可能的涵盖：<br>
+大数据处理的基本知识<br>
+从数据开发工程师或者数据分析师角度需要理解的Spark的一些基本概念<br>
+如何和底层大数据工程师（hadoop/spark等）及运维合理的交流问题<br>
+以及如何在Spark这条路上一条道走到黑，走的更远
+
 ---
 
 class: inverse
@@ -209,6 +221,9 @@ GitHub: https://github.com/yaooqinn
 <img style="zoom: 0.618" src="../../imgs/mammut.png" />
 ]
 
+???
+备注：个人简介
+
 ---
 
 class: inverse
@@ -220,35 +235,65 @@ name: sub-agenda
 ]
 
 .right-column-inverse[
-### 从[定义](#5)上理解什么是Spark?
-### 从[生态](#6)上理解什么是Spark?
-### 从[架构](#7)上理解什么是Spark?
-### 从[模块](#8)上理解什么是Spark?
-### 从[使用](#9)上理解什么是Spark?
-### 从[语言](#10)上理解什么是Spark?
+### 什么是Spark?
+### Spark v.s. Hadoop
+### Spark v.s. Hive
+### Spark v.s. Impala
+### Spark v.s. Flink
 ]
+
+???
+备注： 子目录<br>
+
+本章主要从Spark本身及Hadoop生态中的各类优秀组件的比较重，对于Spark的能力，定位，场景有较为客观的认识<br>
+
+由于能力、篇幅有限，只能基于当下的场景给出较为片面的个人见解
 
 ---
 
 class: inverse
 name: whatisrddoverview
+
 .left-column-inverse[
   ## [什么是Spark?](#4)
   ### 从定义上理解
 ]
 
-.right-column-inverse[
-- In-memory
-  - efficient fault tolerance
-- Handle inefficiently
-  - iterative algorithms
-  - interactive data mining tools
-- Read-only
-  - provides a restricted form of shared memory
-  - shared state: coarse-grained transformations(√) fine-grained updates(×).
-- A system
-  - Spark
+.right-column[
+<div style="margin-top: 20px;text-align: center; font-size: 25px; background-color: white">
+  <b>Apache Spark™</b> is a unified analytics engine for large-scale data processing.
+</div>
+
+<div>
+    <img src="../../imgs/spark_basics/spark-stack.png" style="margin-top: 15px; width: 100%;  zoom: 2.50; align-self: center;" usemap="#stack-map">
+    <map name="stack-map">
+      <area shape="rect" coords="0,0,74,95" href="http://com.netease.bigdata.spark.apache.org/sql/" alt="Spark SQL" title="Spark SQL">
+      <area shape="rect" coords="74,0,150,95" href="http://com.netease.bigdata.spark.apache.org/streaming/" alt="Spark Streaming" title="Spark Streaming">
+      <area shape="rect" coords="150,0,224,95" href="http://com.netease.bigdata.spark.apache.org/mllib/" alt="MLlib (machine learning)" title="MLlib">
+      <area shape="rect" coords="225,0,300,95" href="http://com.netease.bigdata.spark.apache.org/graphx/" alt="GraphX" title="GraphX">
+    </map>
+</div>
+
+<h3 style="text-align: center; font-size: 25px; color: white;"><span style="line-height: 95px; display: inline-block; vertical-align: bottom;">Apache® Spark™ Ecosystem</span></h3>
+
 ]
+
+???
+备注：从定义上理解什么是Spark<br>
+从官方目前给出的定义，Apache Spark是一台支持大规模数据处理标准统一的分析引擎<br>
+
+模块涵盖了
+Spark SQL - 离线结构化数据的处理方案
+Spark Streaming - 流式计算框架
+Spark MLlib - 机器学习框架
+Graphx - 图计算框架
+
+同时这些框架都运行在通用的Spark Core底层计算框架上面
+
+得益于2.x版本后API层面在SparkSession/DataFrame上的高度统一，使得用户可以基于“one stack to rule them all”来大大的爽一把。
+
+
+---
 
 ???
 RDD设计背景
@@ -258,11 +303,11 @@ RDD设计背景
 ---
 
 class: inverse
-name: whatisrddabstraction
-.left-column[
+name: sparkvshadoop
+.left-column-inverse[
   ## [什么是Spark?](#4)
   ### 从定义上理解
-  ### 从生态上理解
+  ### Spark v.s. Hadoop
 ]
 
 .right-column[
@@ -609,7 +654,7 @@ name:sparkprogramingguidesparksubmit1
   <dependency>
     <groupId>org.apache.spark</groupId>
     <artifactId>spark-core_2.11</artifactId>
-    <version>${spark.version}</version>
+    <version>${com.netease.bigdata.spark.version}</version>
     <scope>provided</scope>
   </dependency>
 </dependencies>

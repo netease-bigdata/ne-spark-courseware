@@ -24,6 +24,9 @@
     <artifactId>spark-courseware</artifactId>
     <name>Spark Courseware</name>
     <version>1.0.0-SNAPSHOT</version>
+    <modules>
+        <module>example</module>
+    </modules>
     <packaging>pom</packaging>
 
     <licenses>
@@ -155,6 +158,13 @@
 
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-mapreduce-client-core</artifactId>
+                <version>${hadoop.version}</version>
+                <scope>${hadoop.deps.scope}</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-client</artifactId>
                 <version>${hadoop.version}</version>
                 <scope>${hadoop.deps.scope}</scope>
@@ -248,8 +258,6 @@
                 <groupId>${spark.group}</groupId>
                 <artifactId>spark-core_${scala.binary.version}</artifactId>
                 <version>${spark.version}</version>
-                <type>test-jar</type>
-                <scope>test</scope>
             </dependency>
 
             <dependency>
@@ -336,14 +344,6 @@
             <properties>
                 <spark.version>2.3.0</spark.version>
                 <scalatest.version>3.0.3</scalatest.version>
-            </properties>
-        </profile>
-
-        <profile>
-            <id>hadoop-2.7</id>
-            <properties>
-                <hadoop.version>2.7.3</hadoop.version>
-                <curator.version>2.7.1</curator.version>
             </properties>
         </profile>
     </profiles>
