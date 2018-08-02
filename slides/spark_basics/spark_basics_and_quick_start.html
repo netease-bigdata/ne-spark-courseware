@@ -10,7 +10,7 @@
       body { font-family: 'Droid Serif'; }
       h1, h2, h3 {
         font-family: 'Yanone Kaffeesatz';
-        ffont-weight: 400;
+        font-weight: 400;
         margin-bottom: 0;
       }
       .remark-slide-content h1 { font-size: 3em; }
@@ -129,12 +129,18 @@
         color: #fff;
         width: 75%;
         float: right;
-        padding-top: 1em;
+        padding-top: 0em;
+        padding-bottom: 0em;
+        margin-top: 0em;
         font: monospace;
         font-size: 24;
       }
       .right-column-inverse h2, .right-column-inverse h3, .right-column-inverse h4 {
         color: #fff;
+        padding-top: 0em;
+        padding-bottom: 0.2em;
+        margin-bottom: 0.2em;
+
       }
     </style>
   </head>
@@ -151,7 +157,7 @@ name: 标题页
 <br>
 <br>
 
-## Apache Spark概述及快速入门指南
+## Apache Spark 概述及快速入门指南
 
 <br>
 <br>
@@ -174,25 +180,25 @@ name: agenda
   ** About Me **
   ## -
 
-  ** [什么是Spark？](#4) ** <br>
+  ** [什么是 Spark？](#4) ** <br>
 
-  ** 正确理解Spark相关概念 ** <br>
+  ** 正确理解 Spark 相关概念 ** <br>
 
-  ** 怎么用Spark？ ** <br>
+  ** 怎么用 Spark？ ** <br>
 
-  ** 如何提升Spark技能？ **<br>
+  ** 如何提升 Spark 技能？ **<br>
 
 ???
 
 备注: 目录<br>
 
-本TOPIC从最基本的方面讲解Spark入门所需具备的入手手段<br>
+本 TOPIC 从最基本的方面讲解 Spark 入门所需具备的入手手段<br>
 
 内容尽可能的涵盖：<br>
 大数据处理的基本知识<br>
-从数据开发工程师或者数据分析师角度需要理解的Spark的一些基本概念<br>
-如何和底层大数据工程师（hadoop/spark等）及运维合理的交流问题<br>
-以及如何在Spark这条路上一条道走到黑，走的更远
+从数据开发工程师或者数据分析师角度需要理解的 Spark 的一些基本概念<br>
+如何和底层大数据工程师（hadoop/spark 等）及运维合理的交流问题<br>
+以及如何在 Spark 这条路上一条道走到黑，走的更远
 
 ---
 
@@ -206,7 +212,7 @@ name: aboutme
 .right-column-inverse[
 ## Kent Yao
 
-2016年11月加入网易，目前在杭州研究院-数据科学中心担任资深大数据平台开发工程师，主导Spark作为核心计算框架在[网易大数据平台](https://bigdata.163yun.com/mammut)的相关研发及大规模应用工作。
+2016年11月加入网易，目前在杭州研究院-数据科学中心担任资深大数据平台开发工程师，主导 Spark 作为核心计算框架在[网易大数据平台](https://bigdata.163yun.com/mammut)的相关研发及大规模应用工作。
 
 前华为技术有限公司大数据技术开发部成员。
 
@@ -231,11 +237,11 @@ name: sub-agenda
 
 .left-column-inverse[
   # Agenda
-  ## [什么是Spark?](#4)
+  ## [什么是 Spark?](#4)
 ]
 
 .right-column-inverse[
-### 什么是Spark?
+### 什么是 Spark?
 ### Spark v.s. Hadoop
 ### Spark v.s. Hive
 ### Spark v.s. Impala
@@ -243,9 +249,9 @@ name: sub-agenda
 ]
 
 ???
-备注： 子目录<br>
+备注：子目录<br>
 
-本章主要从Spark本身及Hadoop生态中的各类优秀组件的比较重，对于Spark的能力，定位，场景有较为客观的认识<br>
+本章主要从 Spark 本身及Hadoop生态中的各类优秀组件的比较重，对于 Spark 的能力，定位，场景有较为客观的认识<br>
 
 由于能力、篇幅有限，只能基于当下的场景给出较为片面的个人见解
 
@@ -255,8 +261,8 @@ class: inverse
 name: whatisrddoverview
 
 .left-column-inverse[
-  ## [什么是Spark?](#4)
-  ### 从定义上理解
+  ## [什么是 Spark?](#4)
+  ### 从定义上看
 ]
 
 .right-column[
@@ -279,8 +285,8 @@ name: whatisrddoverview
 ]
 
 ???
-备注：从定义上理解什么是Spark<br>
-从官方目前给出的定义，Apache Spark是一台支持大规模数据处理标准统一的分析引擎<br>
+备注：从定义上理解什么是 Spark <br>
+从官方目前给出的定义，Apache Spark 是一台支持大规模数据处理标准统一的分析引擎<br>
 
 模块涵盖了
 Spark SQL - 离线结构化数据的处理方案
@@ -288,25 +294,55 @@ Spark Streaming - 流式计算框架
 Spark MLlib - 机器学习框架
 Graphx - 图计算框架
 
-同时这些框架都运行在通用的Spark Core底层计算框架上面
+同时这些框架都运行在通用的 Spark Core 底层计算框架上面
 
-得益于2.x版本后API层面在SparkSession/DataFrame上的高度统一，使得用户可以基于“one stack to rule them all”来大大的爽一把。
-
+得益于 2.x 版本后 API 层面在 SparkSession/DataFrame 上的高度统一，使得用户可以基于 “one stack to rule them all” 来大大滴爽一把。
 
 ---
+class: inverse
+name: sparkvshadoop
+
+.left-column-inverse[
+  ## [什么是 Spark?](#4)
+  ### 从定义上看
+  ### 从特点上看
+]
+
+.right-column-inverse[
+
+#### 速度块
+- DAG - 使用 DAG 对 RDD 的关系进行建模，描述其依赖关系
+- [Catalyst](https://databricks.com/blog/2015/04/13/deep-dive-into-spark-sqls-catalyst-optimizer.html) - 优化器框架
+- [Project Tungsten](https://databricks.com/blog/2015/04/28/project-tungsten-bringing-spark-closer-to-bare-metal.html) - 内存管理、二进制处理、缓存友好、Code-Gen
+- [CBO](https://databricks.com/blog/2017/08/31/cost-based-optimizer-in-apache-spark-2-2.html) - 基于代价的优化器
+- [Continuous Processing](https://databricks.com/blog/2018/03/20/low-latency-continuous-processing-mode-in-structured-streaming-in-apache-spark-2-3-0.html) - Streaming实现准实时到实时
+- ...
+
+#### 易用性
+- 丰富的高阶 API 算子
+- 丰富的语言支持：Java, Scala, Python, R, SQL
+
+#### 通用性<span style="font-size: 0.9em; "> - 统一的 API 和 统一的底层模型: One Stack to Rule Them All</span>
+
+#### 多平台<span style="font-size: 0.9em; "> - Standalone/YARN/Mesos/K8S; DataSources</span>
+
+]
 
 ???
-RDD设计背景
-在实际应用中，存在许多迭代式算法（比如机器学习、图算法等）和交互式数据挖掘工具，这些应用场景的共同之处是，不同计算阶段之间会重用中间结果，即一个阶段的输出结果会作为下一个阶段的输入。但是，目前的MapReduce框架都是把中间结果写入到HDFS中，带来了大量的数据复制、磁盘IO和序列化开销。虽然，类似Pregel等图计算框架也是将结果保存在内存当中，但是，这些框架只能支持一些特定的计算模式，并没有提供一种通用的数据抽象。RDD就是为了满足这种需求而出现的，它提供了一个抽象的数据架构，我们不必担心底层数据的分布式特性，只需将具体的应用逻辑表达为一系列转换处理，不同RDD之间的转换操作形成依赖关系，可以实现管道化，从而避免了中间结果的存储，大大降低了数据复制、磁盘IO和序列化开销。
+备注：从 Spark 特点上理解<br>
 
+在图论中，如果一个有向图从任意顶点出发无法经过若干条边回到该点，则这个图是一个有向无环图（ DAG 图）<br>
+Spark SQL Paper: http://people.csail.mit.edu/matei/papers/2015/sigmod_spark_sql.pdf
 
 ---
 
 class: inverse
 name: sparkvshadoop
+
 .left-column-inverse[
-  ## [什么是Spark?](#4)
+  ## [什么是 Spark?](#4)
   ### 从定义上理解
+  ### 从特点上看
   ### Spark v.s. Hadoop
 ]
 
