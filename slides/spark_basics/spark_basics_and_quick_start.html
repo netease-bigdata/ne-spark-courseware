@@ -103,7 +103,7 @@
         height: 92%;
         float: left;
       }
-      .left-column h2:last-of-type, .left-column h3:last-of-type {
+      .left-column h2:last-of-type, .left-column h3:last-of-type, .left-colum h4:last-of-type  {
         color: #000;
       }
       .right-column {
@@ -122,7 +122,7 @@
         height: 92%;
         float: left;
       }
-      .left-column-inverse h2:last-of-type, .left-column-inverse h3:last-of-type {
+      .left-column-inverse h2:last-of-type, .left-column-inverse h3:last-of-type, .left-column-inverse h4:last-of-type {
         color: #fff;
       }
       .right-column-inverse {
@@ -140,7 +140,6 @@
         padding-top: 0em;
         padding-bottom: 0.2em;
         margin-bottom: 0.2em;
-
       }
     </style>
   </head>
@@ -180,7 +179,7 @@ name: agenda
   ** About Me **
   ## -
 
-  ** [什么是 Spark？](#4) ** <br>
+  ** 什么是 Spark？ ** <br>
 
   ** 正确理解 Spark 相关概念 ** <br>
 
@@ -237,7 +236,7 @@ name: sub-agenda
 
 .left-column-inverse[
   # Agenda
-  ## [什么是 Spark?](#4)
+  ## 什么是 Spark?
 ]
 
 .right-column-inverse[
@@ -261,7 +260,7 @@ class: inverse
 name: whatisrddoverview
 
 .left-column-inverse[
-  ## [什么是 Spark?](#4)
+  ## 什么是 Spark?
   ### 从定义上看
 ]
 
@@ -303,7 +302,7 @@ class: inverse
 name: sparkvshadoop
 
 .left-column-inverse[
-  ## [什么是 Spark?](#4)
+  ## 什么是 Spark?
   ### 从定义上看
   ### 从特点上看
 ]
@@ -329,10 +328,13 @@ name: sparkvshadoop
 ]
 
 ???
+
 备注：从 Spark 特点上理解<br>
 
 在图论中，如果一个有向图从任意顶点出发无法经过若干条边回到该点，则这个图是一个有向无环图（ DAG 图）<br>
-Spark SQL Paper: http://people.csail.mit.edu/matei/papers/2015/sigmod_spark_sql.pdf
+Spark SQL Paper: http://people.csail.mit.edu/matei/papers/2015/sigmod_spark_sql.pdf <br>
+
+RDD Paper: https://www2.eecs.berkeley.edu/Pubs/TechRpts/2011/EECS-2011-82.pdf
 
 ---
 
@@ -340,26 +342,160 @@ class: inverse
 name: sparkvshadoop
 
 .left-column-inverse[
-  ## [什么是 Spark?](#4)
-  ### 从定义上理解
-  ### 从特点上看
-  ### Spark v.s. Hadoop
+  ## Spark v.s. Hadoop
 ]
 
-.right-column[
-A Resilient Distributed Dataset (RDD), the basic abstraction in Spark. Represents an immutable, partitioned collection of elements that can be operated on in parallel
-- Internally, each RDD is characterized by five main properties:
-  - A list of partitions
-  - A function for computing each split
-  - A list of dependencies on other RDDs
-  - Optionally, a Partitioner for key-value RDDs (e.g. to say that the RDD is hash-partitioned)
-  - Optionally, a list of preferred locations to compute each split on (e.g. block locations for an HDFS file)
+.right-column-inverse[
+<div style="margin-top: 20px;text-align: center; font-size: 25px; background-color: white;">
+  <b>Apache Hadoop™</b> 大数据基础生态"事实标准"
+</div>
+#### HDFS
+- 大数据存储"事实标准" - 高可靠的分布式文件系统，可作为Spark等计算引擎的可靠底层存储承载
+
+#### YARN
+- 大数据资源调度"事实标准" - 允许我们各种大数据应用（包括Spark）以多租户的模式共享集群
+
+#### MapReduce
+- 低阶"呆板"的计算框架 - Spark等等诸多大数据计算框架所challenge的点
+
 ]
 
 ???
+备注: spark v.s. hadoop
+
+
+---
+
+class: inverse
+name: sparkvsmapreduce
+
+.left-column-inverse[
+  ## Spark v.s. Hadoop
+  ### Spark v.s MapReduce
+]
+
+.right-column-inverse[
+<div style="margin-top: 20px;text-align: center; font-size: 25px; background-color: white;">
+  <b>Apache Spark™</b> 大数据计算框架"事实标准"
+</div>
+
+#### MapReduce缺点
+
+- 抽象层次低，难以上手
+- 表达能力欠佳，局限map/reduce算子，Job的lineage管理
+- 大量shuffle，大量落盘，不适合迭代
+
+<div style="margin-top: 10px;text-align: left; font-size: medium; ">
+  事实上就像你要装修房子的时候，不小心选了“清工”，你得告诉泥工干啥，木工干啥，X工干啥，然后在告诉包工头什么时候泥工需要做完啥，木工需要做完啥…… 最后发现实际上就像你用双手装修完了房子
+</div>
+
+#### Spark的优点
+- RDD抽象 - 弹性分布式数据集在单机上的完美表达
+- 丰富的算子 - 像乐高积木一样灵活，易玩
+- 高效的迭代算法
+
+<div style="margin-top: 10px;text-align: left; font-size: medium; ">
+  终于把事情交给了一个靠谱的包工头
+</div>
+]
+
+???
+备注： spark v.s. mapreduce
 
 一个RDD就是一个分布式对象集合，本质上是一个只读的分区记录集合，
 每个RDD可以分成多个分区，每个分区就是一个数据集片段，并且一个RDD的不同分区可以被保存到集群中不同的节点上，从而可以在集群中的不同节点上进行并行计算。RDD提供了一种高度受限的共享内存模型，即RDD是只读的记录分区的集合，不能直接修改，只能基于稳定的物理存储中的数据集来创建RDD，或者通过在其他RDD上执行确定的转换操作（如map、join和groupBy）而创建得到新的RDD。
+
+---
+
+class:inverse
+name: hadoopwordcount
+
+.left-column-inverse[
+  ## Spark v.s. Hadoop
+  ### Spark v.s MapReduce
+  ### Hadoop WordCount
+]
+
+.right-column-inverse[
+```java
+public class WordCount {
+    public static class Map extends Mapper<LongWritable, Text, Text, IntWritable> {
+        private final static IntWritable one = new IntWritable(1);
+        private Text word = new Text();
+        public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+            String line = value.toString();
+            StringTokenizer tokenizer = new StringTokenizer(line);
+            while (tokenizer.hasMoreTokens()) {
+                word.set(tokenizer.nextToken());
+                context.write(word, one);
+            }
+        }
+    }
+    public static class Reduce extends Reducer<Text, IntWritable, Text, IntWritable> {
+        public void reduce(Text key, Iterable<IntWritable> values, Context context)
+                throws IOException, InterruptedException {
+            int sum = 0;
+            for (IntWritable val : values) {
+                sum += val.get();
+            }
+            context.write(key, new IntWritable(sum));
+        }
+    }
+    public static void main(String[] args) throws Exception {
+        Configuration conf = new Configuration();
+        Job job = new Job(conf, "wordcount");
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(IntWritable.class);
+        job.setMapperClass(Map.class);
+        job.setReducerClass(Reduce.class);
+        job.setInputFormatClass(TextInputFormat.class);
+        job.setOutputFormatClass(TextOutputFormat.class);
+        FileInputFormat.addInputPath(job, new Path(args[0]));
+        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+        job.waitForCompletion(true);
+    }
+}
+```
+]
+
+---
+
+class: inverse
+name: sparkwordcount
+
+.left-column-inverse[
+  ## Spark v.s. Hadoop
+  ### Spark v.s MapReduce
+  ### Hadoop WordCount
+  ### Spark WordCount
+]
+
+.right-column-inverse[
+
+```scala
+object WordCount {
+
+  def main(args: Array[String]): Unit = {
+    val conf = new SparkConf().setAppName("Word Count").setMaster("local[*]")
+    val sparkContext = new SparkContext(conf)
+    val textFile = sparkContext.textFile(args(0), 2)
+    val words = textFile.flatMap(_.split(" "))
+    val ones = words.map((_, 1))
+    val counts = ones.reduceByKey(_ + _)
+    val res = counts.collect()
+    for ((word, count) <- res) {
+      println(word + ": " + count)
+    }
+    sparkContext.stop()
+  }
+}
+```
+
+或者一句话搞定：
+```scala
+sc.textFile("README.md").flatMap(_.split("\\s+")).map((_, 1)).reduceByKey(_ + _).collect()
+```
+]
 
 ---
 
@@ -434,7 +570,6 @@ res13: String =
 ???
 
 Spark的这种依赖关系设计，使其具有了天生的容错性，大大加快了Spark的执行速度。因为，RDD数据集通过“血缘关系”记住了它是如何从其它RDD中演变过来的，血缘关系记录的是粗颗粒度的转换操作行为，当这个RDD的部分分区数据丢失时，它可以通过血缘关系获取足够的信息来重新运算和恢复丢失的数据分区，由此带来了性能的提升。
-
 
 ---
 
@@ -528,29 +663,6 @@ name: whatisspark
   - Standalone
   - Mesos
   - Yarn
-]
-
----
-
-class:
-name:sparkarchitecture
-
-.left-column[
-  ## What is Spark?
-  ### Overview
-  ### Architecture
-]
-.right-column[
-  ![](../imgs/spark-stack.png)
-- Spark SQL
-  - support for structured data and relational queries
-- Spark Streaming
-  - processing real-time data streams
-- MLlib
-  - built-in machine learning library
-- GraphX
-  -  graph processing
-
 ]
 
 ---
