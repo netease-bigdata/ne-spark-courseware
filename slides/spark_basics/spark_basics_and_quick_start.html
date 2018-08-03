@@ -700,11 +700,44 @@ Deploy Mode
         - 同一NodeManager节点过多Container而产生的本地资源竞争
             - spark.driver.cores
             - spark.driver.memory
-
-
 ```
 
 ]
+
+---
+
+class: inverse
+name: configuration
+
+.left-column-inverse[
+  ## Spark Glossary
+  ### Application
+  ### Deployment
+  ### Configuration
+]
+
+.right-column-inverse[
+
+Spark Properties
+```scala
+# 配置文件
+conf/spark-defaults.conf
+
+# 硬编码
+val conf = new SparkConf().setMaster("local[2]").setAppName("NetEase")
+
+# 动态传参
+bin/spark-submit \
+  --name "Netease" \
+  --master local[4] \
+  --conf spark.eventLog.enabled=false myapp.jar
+
+```
+
+更多可参照文档: https://spark.apache.org/docs/latest/configuration.html#spark-configuration
+
+]
+
 ---
 
 
