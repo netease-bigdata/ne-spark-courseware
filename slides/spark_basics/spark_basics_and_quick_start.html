@@ -551,6 +551,26 @@ name: sparkvsimpala
 
 ]
 
+---
+
+class: inverse
+name: sparkvsflink
+
+.left-column-inverse[
+  ## Spark v.s. Flink
+ ]
+
+.right-column-inverse[
+
+- Flink作为Spark的有力挑战者，正在以新的计算模型尝试解决Spark也在尝试解决的问题<br>
+  <img style="zoom: 0.65" align="center" src="https://mapr.com/developercentral/lambda-architecture/assets/otherpageimages/lambda-architecture-2-800.jpg">
+- 两者相互"学习"、"借鉴"
+- Spark Streaming (Maintained) - DStream、RDD based、微批处理、高吞吐、准实时
+- Spark Structrured Streaming - DataFrame Based、 微批处理/Continuous Process、高吞吐、准实时/实时
+- Flink - 数据流及事件序列模型、流执行模式、实时
+
+]
+
 ???
 
 RDD提供了一组丰富的操作以支持常见的数据运算，分为Action和Transformation两种类型，前者用于执行计算并指定输出的形式，后者指定RDD之间的相互依赖关系。
