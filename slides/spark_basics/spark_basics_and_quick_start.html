@@ -535,16 +535,19 @@ name: sparkvsimpala
   ## Spark v.s. Impala
  ]
 
-.right-column[
-RDDs support two types of operations:
-- transformations
-  - which create a new dataset from an existing one
-- actions
-  - which return a value to the driver program after running a computation on the dataset
+.right-column-inverse[
 
+#### Impala
+- MPP 架构 - 分治思想、均分 task，share nothing、Scalability问题
+- 查询性能最快
+- Workload 建议在百亿级别之下
+- Impala on YARN 已被放弃，与现有计算集群无法融合
 
-<img style="zoom: 0.45" src="../imgs/rdd-operations.png" />
-<img style="zoom: 0.35" src="../imgs/spark-rddoperations.png" />
+#### Spark SQL
+- DAG 架构 - MR模型、Shared storage、 全局meta，优秀的Scalability
+- 查询性能也快
+- Workload > 百亿级别
+- Spark on YARN 可无缝融入现有计算资源池
 
 ]
 
