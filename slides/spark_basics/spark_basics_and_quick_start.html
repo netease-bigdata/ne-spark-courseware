@@ -571,9 +571,94 @@ name: sparkvsflink
 
 ]
 
+---
+
+class: inverse
+name: sub-agenda
+
+.left-column-inverse[
+  # Agenda
+  ## Spark Glossary
+]
+
+.right-column-inverse[
+### Application
+### Spark v.s. Hadoop
+### Spark v.s. Hive
+### Spark v.s. Impala
+### Spark v.s. Flink
+]
+
 ???
 
-RDD提供了一组丰富的操作以支持常见的数据运算，分为Action和Transformation两种类型，前者用于执行计算并指定输出的形式，后者指定RDD之间的相互依赖关系。
+备注：理解 Spark 相关的术语及其背后包含的语义，
+
+有助于用户正确理解 Spark 的构成
+
+有助于用户正确和底层平台开发和维护人员进行有效的沟通
+
+---
+
+class: inverse
+name: application
+
+.left-column-inverse[
+  ## Spark Glossary
+  ### Application
+]
+
+.right-column-inverse[
+
+一个Spark应用是一个由包含 SparkContext 实例主程序作为 Driver 进程，并协调一堆独立的 Executor 进程构成的一个 Master/Salve 的结构<br>
+
+  <img src="http://spark.apache.org/docs/latest/img/cluster-overview.png">
+```scala
+Driver Program - 包含 SparkContext 对象的用户主程序, 调度节点
+Executor - task处理节点、计算节点
+Cluster Manager - 管理集群计算资源的外部服务，常见的有 Standalone Mesos, k8s, YARN
+
+```
+
+]
+
+---
+
+class: inverse
+name: applicationcomponents
+
+.left-column-inverse[
+  ## Spark Glossary
+  ### Application
+]
+
+.right-column-inverse[
+Application
+```
+    - 用户主程序
+    - 包含主程序依赖、Spark jars， 可包含多个Job
+```
+RDD
+```
+    - 用户编程模型，只读的、分布式的数据集及包含的运算的非分布概念抽象
+    - transformation - 指定RDD之间的相互依赖关系
+    - action - 用户执行计算，指定输出形式
+```
+Job
+```
+     - 以 action 算子为划分
+```
+Stage
+```
+     - 以 shuffle 算子划分，也即下游的算子有可能需要从上有算子全量的全量输出中获得输入
+```
+Task
+```
+     - 对应 RDD 分区数，将一个 stage 划分成一堆 task，由 Driver 调度到 Executor 计算
+```
+
+]
+
+???
 
 两类操作的主要区别是，transformations（比如map、filter、groupBy、join等）接受RDD并返回RDD，
 而action操作（比如count、collect等）接受RDD但是返回非RDD（即输出一个值或结果）。
