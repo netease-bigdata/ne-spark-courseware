@@ -583,10 +583,9 @@ name: sub-agenda
 
 .right-column-inverse[
 ### Application
-### Spark v.s. Hadoop
-### Spark v.s. Hive
-### Spark v.s. Impala
-### Spark v.s. Flink
+### Deployment
+### Configuration
+### Monitoring
 ]
 
 ???
@@ -665,6 +664,49 @@ Task
 RDD提供的转换接口都非常简单，都是类似map、filter、groupBy、join等粗粒度的数据转换操作，而不是针对某个数据项的细粒度修改。
 
 ---
+
+class: inverse
+name: deployment
+
+.left-column-inverse[
+  ## Spark Glossary
+  ### Application
+  ### Deployment
+]
+
+.right-column-inverse[
+
+Cluster Manager
+```
+    - spark.master / --master
+    - Standalone - 在集群上启动对应的Master 和 Worker进程，作为资源的管理器
+    - Local - 单进程充当Driver和Executor
+    - Mesos - Apache下的开源分布式资源管理框架
+    - YARN - 生产环境首选资源管理器，支持Hive、Spark、Flink各种任务的资源调度
+    - k8s - 暂时还是实验特性
+```
+Deploy Mode
+```
+    - spark.submit.deplyMode / --deploy-mode
+    - client - Driver 运行在本地，ApplicationMaster 只作为 Executor Launcher
+        - 该模式一般用于调试场景，可以方便自己查看 Driver 端日志，定位问题
+        - 单机的负载极限
+        - Driver 潜在的网络瓶颈
+
+    - cluster - Driver 运行在 ApplicationMaster 内
+        - 该模式一般用于生产环境
+        - YARN ApplicationMaster带 failover 可防止一些潜在问题
+        - 同一集群内 Driver 所处网络环境较好
+        - 同一NodeManager节点过多Container而产生的本地资源竞争
+            - spark.driver.cores
+            - spark.driver.memory
+
+
+```
+
+]
+---
+
 
 class:
 name: whatisrddlineage
