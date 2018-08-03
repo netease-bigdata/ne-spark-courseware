@@ -363,7 +363,6 @@ name: sparkvshadoop
 ???
 备注: spark v.s. hadoop
 
-
 ---
 
 class: inverse
@@ -499,15 +498,42 @@ sc.textFile("README.md").flatMap(_.split("\\s+")).map((_, 1)).reduceByKey(_ + _)
 
 ---
 
-class:
-name: whatisrddlimitations
+class: inverse
+name: sparkvshive
 
-.left-column[
-  ## What is RDD?
-  ### Overview
-  ### Abstraction
-  ### Operations
+.left-column-inverse[
+  ## Spark v.s. Hive
+ ]
+
+.right-column-inverse[
+<div style="margin-top: 20px;text-align: center; font-size: 25px; background-color: white;">
+  <b>Apache Hive MetaStore</b> 大数据元数据"事实标准"
+</div>
+
+#### Hive
+- "原始"的SQL on Hadoop方案
+- 实用、使用成本低，往往在中大型的互联网企业中积累了大量的业务和用户
+- 查询性能通常很低
+
+#### Spark SQL
+- 基于Spark Core的SQL on Hadoop方案
+- 查询性能很快
+- 和Hive的关系可以用"暧昧"来形容
+
+#### Kyuubi
+- 基于Spark SQL提供企业级SQL on Hadoop解决方案
+- https://github.com/yaooqinn/kyuubi
+
 ]
+
+---
+
+class: inverse
+name: sparkvsimpala
+
+.left-column-inverse[
+  ## Spark v.s. Impala
+ ]
 
 .right-column[
 RDDs support two types of operations:
