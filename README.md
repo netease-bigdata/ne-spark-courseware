@@ -4,7 +4,7 @@
 
 
 ## 一、基础知识
-### 1. [Spark概述及快速入门指南](slides/spark_basics/spark_basics_and_quick_start.html)  
+### 1. [Spark概述及快速入门指南](https://netease-bigdata.github.io/ne-spark-courseware/slides/spark_basics/spark_basics_and_quick_start.html#1)  
 ### 2. [基于Maven在IDE中开发Spark应用]()
 
 ## 二、 Spark Core
