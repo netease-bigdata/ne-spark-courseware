@@ -583,9 +583,10 @@ name: sub-agenda
 
 .right-column-inverse[
 ### Application
-### Deployment
 ### Configuration
+### Deployment
 ### Monitoring
+### Tuning
 ]
 
 ???
@@ -659,9 +660,48 @@ Task
 
 ???
 
+在Spark中，一个应用（Application）由一个任务控制节点（Driver）和若干个作业（Job）构成，一个作业由多个阶段（Stage）构成，一个阶段由多个任务（Task）组成。当执行一个应用时，任务控制节点会向集群管理器（Cluster Manager）申请资源，启动Executor，并向Executor发送应用程序代码和文件，然后在Executor上执行任务，运行结束后，执行结果会返回给任务控制节点，或者写到HDFS或者其他数据库中。
+
+Spark通过分析各个RDD的依赖关系生成了DAG，再通过分析各个RDD中的分区之间的依赖关系来决定如何划分阶段，具体划分方法是：在DAG中进行反向解析，遇到宽依赖就断开，遇到窄依赖就把当前的RDD加入到当前的阶段中；将窄依赖尽量划分在同一个阶段中，可以实现流水线计算
+
 两类操作的主要区别是，transformations（比如map、filter、groupBy、join等）接受RDD并返回RDD，
 而action操作（比如count、collect等）接受RDD但是返回非RDD（即输出一个值或结果）。
 RDD提供的转换接口都非常简单，都是类似map、filter、groupBy、join等粗粒度的数据转换操作，而不是针对某个数据项的细粒度修改。
+
+---
+
+class: inverse
+name: configuration
+
+.left-column-inverse[
+  ## Spark Glossary
+  ### Application
+  ### Configuration
+]
+
+.right-column-inverse[
+
+Spark Properties
+```scala
+# 配置文件
+conf/spark-defaults.conf
+
+# 硬编码
+val conf = new SparkConf().setMaster("local[2]").setAppName("NetEase")
+
+# 动态传参
+bin/spark-submit \
+  --name "Netease" \
+  --master local[4] \
+  --conf spark.eventLog.enabled=false myapp.jar
+
+```
+<br>
+<br>
+
+更多可参照文档: https://spark.apache.org/docs/latest/configuration.html#spark-configuration
+
+]
 
 ---
 
@@ -671,6 +711,7 @@ name: deployment
 .left-column-inverse[
   ## Spark Glossary
   ### Application
+  ### Configuration
   ### Deployment
 ]
 
@@ -697,7 +738,7 @@ Deploy Mode
         - 该模式一般用于生产环境
         - YARN ApplicationMaster带 failover 可防止一些潜在问题
         - 同一集群内 Driver 所处网络环境较好
-        - 同一NodeManager节点过多Container而产生的本地资源竞争
+        - 同一NodeManager节点过多 Container 而产生的本地资源竞争
             - spark.driver.cores
             - spark.driver.memory
 ```
@@ -707,35 +748,92 @@ Deploy Mode
 ---
 
 class: inverse
-name: configuration
+name: monitoring
 
 .left-column-inverse[
   ## Spark Glossary
   ### Application
   ### Deployment
   ### Configuration
+  ### Monitoring
 ]
 
 .right-column-inverse[
 
-Spark Properties
-```scala
-# 配置文件
-conf/spark-defaults.conf
-
-# 硬编码
-val conf = new SparkConf().setMaster("local[2]").setAppName("NetEase")
-
-# 动态传参
-bin/spark-submit \
-  --name "Netease" \
-  --master local[4] \
-  --conf spark.eventLog.enabled=false myapp.jar
+Live UI
 
 ```
+http://<driver-node>:4040
+```
 
-更多可参照文档: https://spark.apache.org/docs/latest/configuration.html#spark-configuration
+History Server
 
+```
+http://<history-server-url>:18080
+```
+Metrics
+
+```
+$SPARK_HOME/conf/metrics.properties
+
+```
+Log
+```
+# 配置
+$SPARK_HOME/conf/log4j.properties
+```
+```
+# 一般定位顺序
+Driver -> ApplicationMaster -> Executor -> NodeManager
+```
+```
+# 命令
+yarn logs -applicationId [app_id] -appOwner [user_name]
+```
+]
+
+---
+
+class: inverse
+name: monitoring
+
+.left-column-inverse[
+  ## Spark Glossary
+  ### Application
+  ### Deployment
+  ### Configuration
+  ### Monitoring
+  ### Tuning
+]
+
+.right-column-inverse[
+
+如何从数据层面下手调优
+```
+数据类型 (primitive)             FileFormat（json / parquet / orc...)
+文件分区、分桶                   小文件问题
+数据倾斜问题                     单个 partition / task 的 workload
+...
+```
+如何从资源层面下手调优
+```
+Driver（内存的配置）
+Executor (内存、核数)大小的配置
+所属 Yarn 队列资源的通盘考虑
+Hadoop集群“超售” - 网络、磁盘、NodeManager load...
+...
+```
+
+如何从代码层面下手调优
+
+```
+避免 shuffle / 广播
+预聚合
+kryo序列化
+RDD 复用 / 持久化
+高性能算子
+RDD -> DataFrame/Dataset
+```
 ]
 
 ---
@@ -845,7 +943,6 @@ name: whatisrddderddtojob
 
 ???
 
-Spark通过分析各个RDD的依赖关系生成了DAG，再通过分析各个RDD中的分区之间的依赖关系来决定如何划分阶段，具体划分方法是：在DAG中进行反向解析，遇到宽依赖就断开，遇到窄依赖就把当前的RDD加入到当前的阶段中；将窄依赖尽量划分在同一个阶段中，可以实现流水线计算
 
 ---
 
@@ -948,7 +1045,6 @@ name: sparkprogramingguide
 
 ???
 
-在Spark中，一个应用（Application）由一个任务控制节点（Driver）和若干个作业（Job）构成，一个作业由多个阶段（Stage）构成，一个阶段由多个任务（Task）组成。当执行一个应用时，任务控制节点会向集群管理器（Cluster Manager）申请资源，启动Executor，并向Executor发送应用程序代码和文件，然后在Executor上执行任务，运行结束后，执行结果会返回给任务控制节点，或者写到HDFS或者其他数据库中。
 
 ---
 
