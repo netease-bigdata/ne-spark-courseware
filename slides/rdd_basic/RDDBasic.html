@@ -330,6 +330,9 @@ name:
 
 ]
 .right-column[
+
+Action:得到一个结果，或者将RDD存入磁盘。
+
 | Action | Meaning |
 | :----------: | :--------------------------------------: |
 | countByKey() | 返回每个(k,count(k))，即每个key的个数 |
@@ -439,10 +442,12 @@ name:
 .right-column[
 
 <figure class="half">
-    <img src="../../imgs/rdd_basics/shuffle.png" width="90%" height="50%">
+    <img src="../../imgs/rdd_basics/shuffle.png" width="72%" height="40%">
 </figure>
 
-- 对
+#### Shuffle是瓶颈所在，shuffle的性能优化十分重要。
+
+- 在write端对map端的分区按照key的hash值进行分块，写入一个partition索引文件（可能存在排序）。
 
 - 磁盘I/O
 
@@ -450,9 +455,52 @@ name:
 
 - 网络传输
 
+- 在read端拉取各个partition索引文件对应分区的数据（可能存在排序)。
+
+
+
 
 ]
 
+---
+class:
+name:
+.left-column[
+## RDD 依赖
+### 宽依赖 & 窄依赖
+### Shuffle 
+### Shuffle性能优化
+
+]
+.right-column[
+- map-side Combine
+
+- 数据倾斜
+
+- 避免shuffle
+
+]
+---
+class: 
+name:
+
+
+.left-column[
+## RDD与Task
+### 分区与Task
+
+]
+.right-column[
+
+- 每个stage里面，有若干个 相互独立的Task。
+
+- Task数目等于被操作RDD的分区数。
+
+- 每个Task分别对RDD的一个分区进行一系列操作。
+
+- 在一个executor中，并行的task数目和executor的核数有关。
+
+]
 ---
 class:
 name:
