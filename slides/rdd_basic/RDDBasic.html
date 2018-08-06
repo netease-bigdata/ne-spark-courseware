@@ -469,36 +469,123 @@ name:
 ## RDD 依赖
 ### 宽依赖 & 窄依赖
 ### Shuffle 
+### Stage & Task
+
+]
+.right-column[
+#### WordCount Lineage
+
+<figure class="half">
+    <img src="../../imgs/rdd_basics/wordcount.png" width="70%" height="35%">
+</figure>
+
+- Action触发Job的提交
+- 按照Shuffle划分stages
+- 每个stage中是独立的n个task，n等于当前stage中rdd分区的数目，每个task分别处理一个分区的数据
+- 在一个executor中，并行的task数目和executor的核数有关。
+
+
+
+]
+
+---
+class:
+name:
+.left-column[
+## RDD 依赖
+### 宽依赖 & 窄依赖
+### Shuffle 
+### Stage & Task
 ### Shuffle性能优化
 
 ]
 .right-column[
-- map-side Combine
+### map-side Combine
 
-- 数据倾斜
+在shuffle write端进行合并数据，可以减少shuffle阶段序列化反序列化开销以及网络传输开销，也会减小在shuffle read端的压力，提升程序性能。
 
-- 避免shuffle
+- 尽量使用aggregateByKey和reduceByKey代替groupByKey
+
+| | |
+| :---:| :---: |
+| groupByKey([numPartitions]) | 没有map-side combine，对(k,v)类型records按照key进行聚合 |
+| reduceByKey(func, [numPartitions]) | map-side combine, 对(k,v)类型records按照key进行合并 |
+| aggregateByKey(zeroValue)(seqOp, combOp, [numPartitions]) |  先对数据按照分区使用seqOp聚合，然后再按照key值使用combOq合并    |
+
+ 一个RDD，变量名为rdd:RDD[(Int,Int)]，对其进行按key，求value之和操作。
+
+ ```
+ //reduceByKey with map-side combine
+val red=rdd.reduceByKey(_+_)
+//aggregateByKey with map-side combine
+val agg=rdd.aggregateByKey(0)(((i1,i2)=>i1+i2),((i1,i2)=>(i1+i2)))
+//groupByKey without map-side combine
+val gbk=rdd.groupByKey().mapValues(iter=> iter.sum)
+ ```
 
 ]
+
 ---
-class: 
+class:
 name:
-
-
 .left-column[
-## RDD与Task
-### 分区与Task
+## RDD 依赖
+### 宽依赖 & 窄依赖
+### Shuffle 
+### Stage & Task
+### Shuffle Tuning
 
 ]
 .right-column[
+#### 数据倾斜
+数据倾斜是由于存在一些<font color=#A52A2A size=4 >**热点数据**</font>，比如某个key存在大量对应的value，或者某个分区存在大量数据(即存在大量hash之后得到同样hash值的key)。
 
-- 每个stage里面，有若干个 相互独立的Task。
+##### 数据倾斜现象
+- 绝大多数task很快结束，存在几个straggler.
+- 原本能够正常执行的Spark作业，执行某个数据集突然报出OOM（内存溢出）异常。
 
-- Task数目等于被操作RDD的分区数。
+##### 数据倾斜原理及影响
+- shuffle Read需要将各个节点上相同的key拉取到某个节点上的一个task来进行处理，比如按照key进行聚合或join等操作。此时如果某个key对应的数据量特别大的话，就会发生数据倾斜。
 
-- 每个Task分别对RDD的一个分区进行一系列操作。
+- 某个task对应数据量大，可能会导致OOM，以及多次重试。
 
-- 在一个executor中，并行的task数目和executor的核数有关。
+- 每个stage的运行时间由最后一个完成的task决定。
+]
+---
+class:
+name:
+.left-column[
+## RDD 依赖
+### 宽依赖 & 窄依赖
+### Shuffle 
+### Stage & Task
+### Shuffle Tuning
+
+]
+.right-column[
+#### 解决数据倾斜
+
+- 提高shuffle操作的并行度-加大shuffle操作时partition数量
+
+  reduceByKey(func, [numPartitions])
+
+  aggregateByKey(zeroValue)(seqOp, combOp, [numPartitions])  
+
+  优点： 实现简单，可以有效缓解数据倾斜。
+
+  缺点： 针对热点数据比如一个key对应巨量数据的情况无法解决。
+
+- 分阶段聚合
+
+  1、前面提到的map-side combine
+
+  2、给key加随机前缀，缓解热点数据
+  
+  比如(hello, 1) (hello, 1) (hello, 1) (hello, 1)，就会变成(1_hello, 1) (1_hello, 1) (2_hello, 1) (2_hello, 1)。
+
+  优点： 对于聚合类的shuffle操作导致的数据倾斜，非常有效。
+
+  缺点： 仅仅适用于聚合类的shuffle操作，适用范围相对较窄。无法处理join类shuffle数据倾斜。
 
 ]
 ---
@@ -508,17 +595,69 @@ name:
 ## RDD 依赖
 ### 宽依赖 & 窄依赖
 ### Shuffle 
-### wordCount lineage
+### Stage & Task
+### Shuffle Tuning
+
+]
+.right-column[
+- broadcast实现map join代替 reduce join，<font color=#A52A2A size=4 >**避免shuffle**</font>
+
+  在对RDD使用join类操作(with inputs not co-partitioned)，而且join操作中的一个RDD或表的数据量比较小
+
+  使用broadcast广播小表，然后通过对小表进行遍历完成map join，避免了shuffle的发生
+
+```
+val rdd2Data = rdd2.collect()
+val rdd2Bc = sc.broadcast(rdd2Data)
+def function(tuple: (String,Int)): (String,(Int,String)) ={
+    for(value <- rdd2Bc.value){
+     if(value._1.equals(tuple._1))
+        return (tuple._1,(tuple._2,value._2.toString))
+         }
+         (tuple._1,(tuple._2,null))
+   }
+val rdd3 = rdd1.map(function(_))
+
+```
+- Why broadcast?
+  
+  Spark存在作用域，变量声明在driver上，当executor需要使用driver上的变量，会有driver拷贝一个副本发送到executor。
+
+  broadcast是保证这个由driver声明的变量值只会发送到executor上面一份。
+
+  如果不使用broadcast,每条数据都要调用map里面的function,每调用一次就会由driver拷贝一份副本发送到executor，造成大量网络传输。
+
+
+
+
+]
+
+
+<!-- ---
+class:
+name:
+.left-column[
+## RDD 依赖
+### 宽依赖 & 窄依赖
+### Shuffle 
+### Stage & Task
+### Shuffle Tuning
 
 ]
 .right-column[
 
-<figure class="half">
-    <img src="../../imgs/rdd_basics/wordcount.png" width="100%" height="50%">
-</figure>
+- Why broadcast?
+  
+  Spark存在作用域，变量声明在driver上，当executor需要使用driver上的变量，会有driver拷贝一个副本发送到executor。
 
-]
----
+  broadcast是保证这个由driver声明的变量值只会发送到executor上面一份。
+
+  如果不使用broadcast,每条数据都要调用map里面的function,每调用一次就会由driver拷贝一份副本发送到executor，造成大量网络传输。
+
+] -->
+
+
+<!-- ---
 class: 
 name:
 
@@ -538,9 +677,34 @@ name:
 
 - 在一个executor中，并行的task数目和executor的核数有关。
 
-]
+] -->
 
----
+
+
+<!-- ---
+class: 
+name:
+
+
+.left-column[
+## RDD与Task
+### 分区与Task
+
+]
+.right-column[
+
+- 每个stage里面，有若干个 相互独立的Task。
+
+- Task数目等于被操作RDD的分区数。
+
+- 每个Task分别对RDD的一个分区进行一系列操作。
+
+- 在一个executor中，并行的task数目和executor的核数有关。
+
+] -->
+
+
+<!-- ---
 class: 
 name:
 
@@ -561,7 +725,8 @@ name:
 
 
 
-]
+] -->
+
 
 ---
 class: 
@@ -574,7 +739,9 @@ name:
 
 ]
 .right-column[
-- 适当的缓存数据可以避免重复计算。
+- 机器学习，图计算等应用存在大量迭代计算。
+
+- 适当的缓存中间数据可以避免重复计算。
 
   persist(storageLevel)
 
@@ -582,16 +749,16 @@ name:
 
 - 缓存级别
 
-|                     |
-| :-----------------: |
-|     MEMORY_ONLY     |
-|   MEMORY_AND_DISK   |
-|   MEMORY_ONLY_SER   |
-| MEMORY_AND_DISK_SER |
-|      DISK_ONLY      |
-|    MEMORY_ONLY_2    |
-|  MEMORY_AND_DISK_2  |
-|      OFF_HEAP       |
+|                     |  |
+| :-----------------: | :----:|
+|     MEMORY_ONLY     |    只缓存在内存中|
+|   MEMORY_AND_DISK   |  缓存在内存和磁盘|
+|   MEMORY_ONLY_SER   |  序列化缓存在内存中|
+| MEMORY_AND_DISK_SER |   序列化缓存在内存和磁盘|
+|      DISK_ONLY      |    只缓存在磁盘|
+|    MEMORY_ONLY_2    |    缓存在内存中两份(一份副本)|
+|  MEMORY_AND_DISK_2  |  缓存在内核和磁盘两份(一份副本)|
+|      OFF_HEAP       |  缓存在堆外 |
 
 
 
@@ -628,12 +795,18 @@ name:
 
 ]
 ---
+
+class: middle, center, inverse
+name: greetings
+# Q & A
+---
 class: center, middle, inverse
 
 # Thanks！
+
 <img style="zoom: 1.0" src="../../imgs/mammut.png"  align="bottom" />
 
-
+<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">Creative Commons Attribution-NonCommercial 4.0 International License</a>.
 
     </textarea>
     <script src="https://remarkjs.com/downloads/remark-latest.min.js">
