@@ -582,6 +582,7 @@ name: sub-agenda
 ]
 
 .right-column-inverse[
+### SparkContext
 ### Application
 ### Configuration
 ### Deployment
@@ -600,10 +601,26 @@ name: sub-agenda
 ---
 
 class: inverse
+name:sparkcontext
+
+.left-column-inverse[
+  ## Spark Glossary
+  ### SparkContext
+]
+.right-column-inverse[
+- the entrance / the heart / the master of a Spark APP
+
+<img style="background-color: white" src="../../imgs/spark_basics/sparkcontext-services.png">
+]
+
+---
+
+class: inverse
 name: application
 
 .left-column-inverse[
   ## Spark Glossary
+  ### SparkContext
   ### Application
 ]
 
@@ -621,6 +638,10 @@ Cluster Manager - 管理集群计算资源的外部服务，常见的有 Standal
 
 ]
 
+???
+Spark运行架构包括集群资源管理器（Cluster Manager）、运行作业任务的工作节点（Worker Node）、每个应用的任务控制节点（Driver）和每个工作节点上负责具体任务的执行进程（Executor）。其中，集群资源管理器可以是Spark自带的资源管理器，也可以是YARN或Mesos等资源管理框架。
+与Hadoop MapReduce计算框架相比，Spark所采用的Executor有两个优点：一是利用多线程来执行具体的任务（Hadoop MapReduce采用的是进程模型），减少任务的启动开销；二是Executor中有一个BlockManager存储模块，会将内存和磁盘共同作为存储设备，当需要多轮迭代计算时，可以将中间结果存储到这个存储模块里，下次需要时，就可以直接读该存储模块里的数据，而不需要读写到HDFS等文件系统里，因而有效减少了IO开销；或者在交互式查询场景下，预先将表缓存到该存储系统上，从而可以提高读写IO性能。
+
 ---
 
 class: inverse
@@ -628,6 +649,7 @@ name: applicationcomponents
 
 .left-column-inverse[
   ## Spark Glossary
+  ### SparkContext
   ### Application
 ]
 
@@ -675,6 +697,7 @@ name: configuration
 
 .left-column-inverse[
   ## Spark Glossary
+  ### SparkContext
   ### Application
   ### Configuration
 ]
@@ -710,6 +733,7 @@ name: deployment
 
 .left-column-inverse[
   ## Spark Glossary
+  ### SparkContext
   ### Application
   ### Configuration
   ### Deployment
@@ -752,6 +776,7 @@ name: monitoring
 
 .left-column-inverse[
   ## Spark Glossary
+  ### SparkContext
   ### Application
   ### Deployment
   ### Configuration
@@ -795,10 +820,47 @@ yarn logs -applicationId [app_id] -appOwner [user_name]
 ---
 
 class: inverse
+name: debugstring
+
+.left-column-inverse[
+  ## Spark Glossary
+  ### SparkContext
+  ### Application
+  ### Deployment
+  ### Configuration
+  ### Monitoring
+]
+
+.right-column-inverse[
+
+### toDebugString
+
+```scala
+scala> val wordCount = sc.textFile("README.md").flatMap(_.split("\\s+")).map((_, 1)).reduceByKey(_ + _)
+wordCount: org.apache.spark.rdd.RDD[(String, Int)] = ShuffledRDD[21] at reduceByKey at <console>:24
+
+scala> wordCount.toDebugString
+res13: String =
+(2) ShuffledRDD[21] at reduceByKey at <console>:24 []
+ +-(2) MapPartitionsRDD[20] at map at <console>:24 []
+    |  MapPartitionsRDD[19] at flatMap at <console>:24 []
+    |  README.md MapPartitionsRDD[18] at textFile at <console>:24 []
+    |  README.md HadoopRDD[17] at textFile at <console>:24 []
+```
+]
+
+???
+
+Spark的这种依赖关系设计，使其具有了天生的容错性，大大加快了Spark的执行速度。因为，RDD数据集通过“血缘关系”记住了它是如何从其它RDD中演变过来的，血缘关系记录的是粗颗粒度的转换操作行为，当这个RDD的部分分区数据丢失时，它可以通过血缘关系获取足够的信息来重新运算和恢复丢失的数据分区，由此带来了性能的提升。
+
+---
+
+class: inverse
 name: monitoring
 
 .left-column-inverse[
   ## Spark Glossary
+  ### SparkContext
   ### Application
   ### Deployment
   ### Configuration
@@ -837,472 +899,35 @@ RDD -> DataFrame/Dataset
 ]
 
 ---
-
-
-class:
-name: whatisrddlineage
-
-.left-column[
-  ## What is RDD?
-  ### Overview
-  ### Abstraction
-  ### Operations
-  ### Lineage
-]
-
-.right-column[
-### A.K.A RDD operator graph or RDD dependency graph
-  - a graph of all the parent RDDs of a RDD
-  - built as a result of applying transformations to the RDD
-
-
-<img style="zoom: 0.60" src="../imgs/rdd-lineage.jpg" />
-
-### toDebugString
-
-```scala
-scala> val wordCount = sc.textFile("README.md").flatMap(_.split("\\s+")).map((_, 1)).reduceByKey(_ + _)
-wordCount: org.apache.spark.rdd.RDD[(String, Int)] = ShuffledRDD[21] at reduceByKey at <console>:24
-
-scala> wordCount.toDebugString
-res13: String =
-(2) ShuffledRDD[21] at reduceByKey at <console>:24 []
- +-(2) MapPartitionsRDD[20] at map at <console>:24 []
-    |  MapPartitionsRDD[19] at flatMap at <console>:24 []
-    |  README.md MapPartitionsRDD[18] at textFile at <console>:24 []
-    |  README.md HadoopRDD[17] at textFile at <console>:24 []
-```
-]
-
-???
-
-Spark的这种依赖关系设计，使其具有了天生的容错性，大大加快了Spark的执行速度。因为，RDD数据集通过“血缘关系”记住了它是如何从其它RDD中演变过来的，血缘关系记录的是粗颗粒度的转换操作行为，当这个RDD的部分分区数据丢失时，它可以通过血缘关系获取足够的信息来重新运算和恢复丢失的数据分区，由此带来了性能的提升。
-
----
-
-class:
-name: whatisrdddependencies
-
-.left-column[
-  ## What is RDD?
-  ### Overview
-  ### Abstraction
-  ### Operations
-  ### Lineage
-  ### Dependencies
-]
-
-.right-column[
-### Dependency
-  - the base (abstract) class to model a dependency relationship between two or more RDDs.
-
-#### - Narrow Dependencies
-  - 1: 1; n: 1
-  - allow for pipelined execution
-
-#### - Wide Dependencies
-  - 1: n
-  - everyday I am shuffling
-
-<img style="zoom: 0.40" src="../imgs/spark-rdd-dependencies.png" />
-]
-
-???
-窄依赖表现为一个父RDD的分区对应于一个子RDD的分区，或多个父RDD的分区对应于一个子RDD的分区
-
-宽依赖则表现为存在一个父RDD的一个分区对应一个子RDD的多个分区
-
-总体而言，如果父RDD的一个分区只被一个子RDD的一个分区所使用就是窄依赖，否则就是宽依赖。
-
-在两种依赖关系中，窄依赖的失败恢复更为高效，它只需要根据父RDD分区重新计算丢失的分区即可（不需要重新计算所有分区），而且可以并行地在不同节点进行重新计算。而对于宽依赖而言，单个节点失效通常意味着重新计算过程会涉及多个父RDD分区，开销较大。
-
----
-
-class:
-name: whatisrddderddtojob
-
-.left-column[
-  ## What is RDD?
-  ### Overview
-  ### Abstraction
-  ### Operations
-  ### Lineage
-  ### Dependencies
-  ### Job Scheduling
-]
-
-.right-column[
-### Example of how Spark computes job stages.
-  - Boxes with solid outlines are RDDs.
-  - Partitions are shaded rectangles, in black if they are already in memory.
-  - To run an action on RDD G, we build build stages at wide dependencies and pipeline narrow transformations inside each stage.
-  - In this case, stage 1’s output RDD is already in RAM, so we run stage 2 and then 3
-
-<img style="zoom: 0.60" src="../imgs/spark-rddtojob.png" />
-]
-
-???
-
-
----
-
-class:
-name: whatisspark
-
-.left-column[
-  ## What is Spark?
-  ### Overview
-]
-.right-column[
-
-##### Apache Spark is a fast and general-purpose cluster computing system
-- #### Speed
-  - DAG execution engine supporting acyclic data flow and in-memory computing
-
-- #### Ease of Use
-  - Write applications quickly in Java, Scala, Python, R, SQL
-
-- #### Generality
-  - Combine SQL, streaming, and complex analytics.
-
-- #### Runs Everywhere
-  - Standalone
-  - Mesos
-  - Yarn
-]
-
----
-
-class:
-name:clusteroverview
-
-.left-column[
-  ## What is Spark?
-  ### Overview
-  ### Architecture
-  ### Components
-]
-.right-column[
-  .bottom[![](../imgs/cluster-overview.png)]
-- Driver program
-    - the process running the main() function of the application and creating the SparkContext
-- Cluster manager
-    - an external service for acquiring resources on the cluster (e.g. standalone manager, Mesos, YARN)
-- Worker node
-    - any node that can run application code in the cluster
-- Executor
-    - a process launched for an application on a worker node, that runs tasks and keeps data in memory or disk storage across them. Each application has its own executors.
-]
-
-???
-
-Spark运行架构包括集群资源管理器（Cluster Manager）、运行作业任务的工作节点（Worker Node）、每个应用的任务控制节点（Driver）和每个工作节点上负责具体任务的执行进程（Executor）。其中，集群资源管理器可以是Spark自带的资源管理器，也可以是YARN或Mesos等资源管理框架。
-与Hadoop MapReduce计算框架相比，Spark所采用的Executor有两个优点：一是利用多线程来执行具体的任务（Hadoop MapReduce采用的是进程模型），减少任务的启动开销；二是Executor中有一个BlockManager存储模块，会将内存和磁盘共同作为存储设备，当需要多轮迭代计算时，可以将中间结果存储到这个存储模块里，下次需要时，就可以直接读该存储模块里的数据，而不需要读写到HDFS等文件系统里，因而有效减少了IO开销；或者在交互式查询场景下，预先将表缓存到该存储系统上，从而可以提高读写IO性能。
-
----
-
-class:
-name:whatissparksparkcontext
-
-.left-column[
-  ## What is Spark?
-  ### Overview
-  ### Architecture
-  ### Components
-  ### SparkContext
-]
-.right-column[
-- the entrance / the heart / the master of a Spark APP
-
-![](../imgs/sparkcontext-services.png)
-]
-
----
-
-class:
-name: sparkprogramingguide
-
-.left-column[
-  ## Spark Programming Guide
-  ### Terminology
-]
-
-.right-column[
-- Spark application
-    - a driver program that runs the user’s main function and executes various parallel operations on a cluster
-- RDD
-    - a collection of elements partitioned across the nodes of the cluster that can be operated on in parallel
-- Shared variables
-    - broadcast variables
-    - accumulators
-- Job
-    - a parallel computation consisting of multiple tasks that gets spawned in response to a Spark action (e.g. save, collect)
-- Stage
-    - each job gets divided into smaller sets of tasks called stages that depend on each other (similar to the map and reduce stages in MapReduce)
-- Task
-    - a unit of work that will be sent to one executor
-]
-
-???
-
-
----
-
-class:
-name:sparkprogramingguidesparkshell
-
-.left-column[
-  ## Spark Programming Guide
-  ### Terminology
-  ### Spark Shell
-]
-.right-column[
-#### - The launch code
-```shell
-./bin/spark-shell
-```
-
-#### - A simple case: Word Count
-```scala
-scala> val lines = spark.read.textFile(“README.md”)
-lines: org.apache.spark.sql.Dataset[String] = [value: string]
-scala> val words = lines.flatMap(_.split(“ ”))
-words: org.apache.spark.sql.Dataset[String] = [value: string]
-scala> val groups = words.groupByKey(identity)
-groups: org.apache.spark.sql.KeyValueGroupedDataset[String,String] = org.apache.spark.sql.KeyValueGroupedDataset@6473ef35
-scala> val wordcount = groups.count
-wordcount: org.apache.spark.sql.Dataset[(String, Long)] = [value: string, count(1): bigint]
-```
-
-#### - Simpler way
-```scala
-val res = spark.read.textFile("README.md")
-  .flatMap(_.split(" "))
-  .groupByKey(identity)
-  .count
-  .collect
-```
-]
-
----
-
-class:
-name:sparkprogramingguidesparksubmit1
-
-.left-column[
-  ## Spark Programming Guide
-  ### Terminology
-  ### Spark Shell
-  ### Spark Submit
-]
-.right-column[
-#### Self-Contained Word Count App
-#####  - Maven dependency on Spark
-```xml
-<properties>
-  <spark.version>2.1.0</spark.version>
-</properties>
-
-<dependencies>
-  <dependency>
-    <groupId>org.apache.spark</groupId>
-    <artifactId>spark-core_2.11</artifactId>
-    <version>${com.netease.bigdata.spark.version}</version>
-    <scope>provided</scope>
-  </dependency>
-</dependencies>
-```
-]
-
----
-
-class:
-name:sparkprogramingguidesparksubmit2
-
-.left-column[
-  ## Spark Programming Guide
-  ### Terminology
-  ### Spark Shell
-  ### Spark Submit
-]
-.right-column[
-#### Self-Contained Word Count App
-#####  - Write main procedure
-```scala
-package com.netease.mammut.spark.training
-
-import org.apache.spark.{SparkConf, SparkContext}
-
-object WordCount {
-
-  def main(args: Array[String]): Unit = {
-    require(args.length == 1, "Usage: WordCount <input file>")
-
-    val conf = new SparkConf().setAppName("Word Count").setMaster("local[*]")
-    val sparkContext = new SparkContext(conf)
-
-    val textFile = sparkContext.textFile(args(0), 2)
-    val words = textFile.flatMap(_.split(" "))
-    val ones = words.map((_, 1))
-    val counts = ones.reduceByKey(_ + _)
-
-    val res = counts.collect()
-
-    for ((word, count) <- res) {
-      println(word + ": " + count)
-    }
-
-    sparkContext.stop()
-  }
-}
-```
-]
-
----
-
-class:
-name:sparkprogramingguidesparksubmit3
-
-.left-column[
-  ## Spark Programming Guide
-  ### Terminology
-  ### Spark Shell
-  ### Spark Submit
-]
-.right-column[
-#### Self-Contained Word Count App
-#####  - Compiling & Packaging
-```scala
-<build>
-  <plugins>
-    <plugin>
-      <!-- https://mvnrepository.com/artifact/net.alchim31.maven/scala-maven-plugin -->
-     <groupId>net.alchim31.maven</groupId>
-      <artifactId>scala-maven-plugin</artifactId>
-      <version>3.2.2</version>
-      <executions>
-        <execution>
-          <id>scala-compile-first</id>
-          <goals>
-            <goal>compile</goal>
-          </goals>
-        </execution>
-      </executions>
-    </plugin>
-  </plugins>
-</build>
-```
-
-```shell
-mvn package
-```
-]
-
----
-
-class:
-name:sparkprogramingguidesparksubmit4
-
-.left-column[
-  ## Spark Programming Guide
-  ### Terminology
-  ### Spark Shell
-  ### Spark Submit
-]
-.right-column[
-#### Self-Contained Word Count App
-#####  - Submit Application
-###### - spark-submit
-```shell
-./bin/spark-submit \
-  --class <main-class> \
-  --master <master-url> \
-  --deploy-mode <deploy-mode> \
-  --conf <key>=<value> \
-  ... # other options
-  <application-jar> \
-  [application-arguments]
-```
-###### - our example
-```shell
-./bin/spark-submit
-  --class com.netease.mammut.spark.training.WordCount
-  /some/path/to/mammut-spark-training-1.0-SNAPSHOT.jar
-  README.md
-```
-]
-
----
-
-class:
-name: sparkprogramingguide
-
-.left-column[
-  ## Spark Programming Guide
-  ### Terminology
-  ### Spark Shell
-  ### Spark Submit
-  ### What's More
-]
-.right-column[
-  .center.middle[
-  ### Where to Go from Here
-  Click [Spark Programing Guide](http://spark.apache.org/docs/2.1.0/programming-guide.html) to see more advantage usages of RDDs.
-  ]
-]
-
-
----
-
 class: inverse
-name: agenda
+name: sub-agenda
 
 .left-column-inverse[
-  # Agenda
-  ### Spark Core
-  ### Spark SQL
+  ## Spark之路
 ]
 
 .right-column-inverse[
-#### What is Spark SQL?
-#### Spark SQL Programming Guide
+
+#### 源码学习:
+- Spark源码 - https://github.com/apache/spark <br>
+- 三方库源码 - https://spark-packages.org/ <br>
+
+#### 文档学习:
+- 官方文档 - http://spark.apache.org/docs/latest/ <br>
+- 官方博客 - https://databricks.com/blog <br>
+
+#### 其他：
+- https://github.com/netease-bigdata/ne-spark-courseware
+- https://github.com/jaceklaskowski/mastering-apache-spark-book
+- 远离 <b>王家林</b>
+
 ]
 
 ---
 
-class:
-name: sparksqldataset
-
-.left-column[
-  ## Spark SQL
-  ### Dataset/DataFrame
-]
-.right-column[
-
-    <img style="zoom: 1.0" src="../imgs/rdd.png" />
-]
-
-???
-
-Spark 1.x的RDD更多意义上是一个一维、只有行概念的数据集，比如 RDD[Person]，那么一行就是一个Person，存在内存里也是把 Person 作为一个整体（序列化前的java object，或序列化后的bytes）。
-
-Spark 2.x里，一个 Person 的 Dataset 或 DataFrame，是二维行+列的数据集，比如一行一个 Person，有 name:String, age:Int, height:Double 三列；在内存里的物理结构，也会显式区分列边界。
-Dataset/DataFrame 在 API 使用上有区别：Dataset 相比 DataFrame 而言是 type-safe 的，能够在编译时对 AnalysisExecption 报错（如下图示例）:
-Dataset/DataFrame 存储方式无区别：两者在内存中的存储方式是完全一样的、是按照二维行列（UnsafeRow）来存的，所以在没必要区分 Dataset 或 DataFrame 在 API 层面的差别时，我们统一写作 Dataset/DataFrame
-
----
-
-class:
-name: sparksql
-
-.left-column[
-  ## Spark SQL
-
-
-]
-.right-column[
-<img style="zoom: 0.40" src="../imgs/sparksqlcatalyst.png" />
-]
+class: middle, center, inverse
+name: greetings
+# Q & A
 
 ---
 
@@ -1310,6 +935,8 @@ class: middle, center, inverse
 name: greetings
 # Thank You!
 ### [Kent Yao]
+
+<img style="zoom: 1.0" src="../../imgs/mammut.png"  align="bottom" />
 
 <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">Creative Commons Attribution-NonCommercial 4.0 International License</a>.
 
