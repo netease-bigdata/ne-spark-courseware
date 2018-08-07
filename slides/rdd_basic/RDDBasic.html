@@ -170,7 +170,6 @@ name: rdd
   **  RDD定义及特点  **<br>
   ** RDD Operations **<br>
   ** RDD 依赖 **<br>
-  ** RDD 与 Task **<br>
   ** RDD Persist **<br>
   ** 相关链接 **<br>
 
@@ -251,11 +250,11 @@ transformation：从数据源生成RDD或者对已存在的RDD进行转换生成
 | distinct([numPartitions])) |   返回一个不包含重复record的数据集      |
 | groupByKey([numPartitions]) | 对(k,v)类型records按照key进行聚合 |
 | reduceByKey(func, [numPartitions]) | 对(k,v)类型records按照key进行合并 |
-| aggregateByKey(zeroValue)(seqOp, combOp, [numPartitions]) |  先对数据按照分区聚合，然后再按照key值合并    |
-| sortByKey | 对(k,v)类型records按照key进行排序 |
+| aggregateByKey(zeroValue)(seqOp, combOp,[numPartitions]) |  先对数据按照分区聚合，然后按照key值合并    |
+| sortByKey([ascending], [numPartitions]) | 对(k,v)类型records按照key进行排序 |
 | union(otherDataset) | 直接将两个RDD的分区进行联合 |
-| join | (k,v) join(k,w)=>(k,(v,w))|
-| cogroup |   （k,v) coGroup(k,w)=>(k,seq(v),seq(w))|
+| join(otherDataset, [numPartitions]) | (k,v) join(k,w)=>(k,(v,w))|
+| cogroup(otherDataset, [numPartitions]) |   （k,v) coGroup(k,w)=>(k,seq(v),seq(w))|
 | cartesian(otherDataset) | 笛卡尔积计算 |
 | coalesce(numPartitions) | 重新分区 |
 | repartition(numPartitions) | 重新分区 |
@@ -274,14 +273,14 @@ name:
 .right-column[
 - transforamtion算子只是提供了一个并行的语义。
 
-- API隐藏了数据划分、并行、容错等复杂的框架代码。
+- API隐藏了数据划分、并行、通信、容错等复杂的框架代码。
 
-- 算子里面参数为用户自定义的函数(UDF)，该函数为一个串行函数，根据算子的语义对RDD中的数据按照语义的<font color=#A52A2A size=4 >**操作粒度**</font>进行操作。
+- 算子里面如果有函数参数，该函数为用户自定义的函数(UDF)，该函数为一个串行函数，根据算子的语义对RDD中的数据按照语义的<font color=#A52A2A size=4 >**操作粒度**</font>进行操作。
 
-1. rdd1.mapValues(s=> s*2)
-2. def func1( i:Int):Int={ i*2}
-   
-   rdd1.mapValues (func1)
+  1. rdd1.mapValues(s=> s*2)
+  2. def func1( i:Int):Int={ i*2}
+
+  rdd1.mapValues (func1)
 
 ]
 ---
@@ -295,6 +294,8 @@ name:
 ]
 .right-column[
 
+#### 操作粒度
+
 - 对整条数据操作
 
   map, flatMap, filter
@@ -307,13 +308,19 @@ name:
 
   mapPartitions,mapPartitionsWithIndex
 
-- 对多个RDD进行操作
+- 对分区进行混洗(shuffle)
+
+  reduceBykey,aggregataByKey,gropuByKey,repartition,sortByKey
+
+  repartition,repartitionAndSortWithinPartitions
+
+<!-- - 对多个RDD进行操作
 
   join, union, coGroup
 
 - 重新分区
 
-  repartition, coalesce 
+  repartition, coalesce  -->
 
 
 
@@ -366,9 +373,15 @@ name:
 
   mapPartitions算子，调用function10次，但是每次处理一个分区的数据，可能OOM
 
-- 例子：collect算子
+- 例子：慎重使用collect算子
 
   collect算子会拉取rdd中所有数据到driver节点，如果数据量过大，会造成driver的OOM，因此collect只适用于拉取小规模(在executor经过处理)的数据
+
+<!-- - repartitionandsortwithinpartitions
+
+  如果需要repartition之后对分区排序，那么使用这个repartitionandsortwithinpar
+  titions性能会更好，因为可以将排序放在shuffle过程 -->
+
 
 - 尽量使用reduceByKey代替groupByKey
 
@@ -447,7 +460,7 @@ name:
 
 #### Shuffle是瓶颈所在，shuffle的性能优化十分重要。
 
-- 在write端对map端的分区按照key的hash值进行分块，写入一个partition索引文件（可能存在排序）。
+- 在shuffle write端对map端的分区按照key的hash值进行分块，每个task写入一个partition索引文件（可能存在排序）。
 
 - 磁盘I/O
 
@@ -455,7 +468,7 @@ name:
 
 - 网络传输
 
-- 在read端拉取各个partition索引文件对应分区的数据（可能存在排序)。
+- 在shuffle read端拉取各个partition索引文件对应分区的数据（可能存在排序)。
 
 
 
@@ -496,11 +509,41 @@ name:
 ### 宽依赖 & 窄依赖
 ### Shuffle 
 ### Stage & Task
-### Shuffle性能优化
+### Shuffle Tuning
 
 ]
 .right-column[
-### map-side Combine
+#### 避免不必要shuffle
+
+- repartition, coalesce, repartitionandsortwithinpartitions 对rdd重新分区
+
+  repartition(numPartitions: Int)=coalesce(numPartitions, shuffle = true)
+
+  如果需要repartition之后对分区排序，那么使用这个repartitionandsortwithinpar
+  titions性能会更好，因为可以将分区排序放在shuffle过程
+
+  <figure class="half">
+    <img src="../../imgs/rdd_basics/repartition-1.png" width="60%" height="30%">
+    &nbsp; &nbsp;  
+    <img src="../../imgs/rdd_basics/repartition-2.png" width="30%"  height="30%">
+</figure>
+
+
+]
+
+---
+class:
+name:
+.left-column[
+## RDD 依赖
+### 宽依赖 & 窄依赖
+### Shuffle 
+### Stage & Task
+### Shuffle Tuning
+
+]
+.right-column[
+#### map-side Combine
 
 在shuffle write端进行合并数据，可以减少shuffle阶段序列化反序列化开销以及网络传输开销，也会减小在shuffle read端的压力，提升程序性能。
 
@@ -577,11 +620,7 @@ name:
 
 - 分阶段聚合
 
-  1、前面提到的map-side combine
-
-  2、给key加随机前缀，缓解热点数据
-  
-  比如(hello, 1) (hello, 1) (hello, 1) (hello, 1)，就会变成(1_hello, 1) (1_hello, 1) (2_hello, 1) (2_hello, 1)。
+  前面提到的map-side combine
 
   优点： 对于聚合类的shuffle操作导致的数据倾斜，非常有效。
 
@@ -619,19 +658,78 @@ def function(tuple: (String,Int)): (String,(Int,String)) ={
 val rdd3 = rdd1.map(function(_))
 
 ```
-- Why broadcast?
-  
-  Spark存在作用域，变量声明在driver上，当executor需要使用driver上的变量，会有driver拷贝一个副本发送到executor。
-
-  broadcast是保证这个由driver声明的变量值只会发送到executor上面一份。
-
-  如果不使用broadcast,每条数据都要调用map里面的function,每调用一次就会由driver拷贝一份副本发送到executor，造成大量网络传输。
-
 
 
 
 ]
 
+---
+class:
+name:
+.left-column[
+## RDD 依赖
+### 宽依赖 & 窄依赖
+### Shuffle 
+### Stage & Task
+### Shuffle Tuning
+
+]
+.right-column[
+
+- Why broadcast?
+  
+  Spark存在作用域，变量声明在driver上，当task需要操作这些driver上声明的变量时会从driver拷贝副本传输到task。
+
+  broadcast是保证这个由driver声明的变量值只会发送到每个worker上面一份。
+
+  如果不使用broadcast,driver需要给每个task都发送一份副本，如果广播变量较大，会造成大量网络传输。
+
+```
+val rdd2Data = rdd2.collect()
+//val rdd2Bc = sc.broadcast(rdd2Data)
+def function(tuple: (String,Int)): (String,(Int,String)) ={
+    for(value <- rdd2Data.value){
+     if(value._1.equals(tuple._1))
+        return (tuple._1,(tuple._2,value._2.toString))
+         }
+         (tuple._1,(tuple._2,null))
+   }
+val rdd3 = rdd1.map(function(_))
+
+```
+
+]
+
+---
+class:
+name:
+.left-column[
+## RDD 依赖
+### 宽依赖 & 窄依赖
+### Shuffle 
+### Stage & Task
+### Shuffle Tuning
+
+]
+.right-column[
+
+ - 给key加随机前缀，缓解热点数据
+
+  通过spark提供的takeSample算子可以对RDD进行采样。通过观察看是否存在数据倾斜/热点数据.
+
+  ```
+  takeSample(withReplacement, num, [seed])  
+ ```
+
+  进行join操作，比如存在热点key “hello",对应大量的value,此时我们给每个key加上(0-10)之间的随机前缀，这些数据就会随机变成(1_hello,v1),(2_hello,v2) ... (10_hello,v10)，这样就缓解了热点的key。
+
+
+
+
+- 混合使用多种调优策略
+
+
+]
 
 <!-- ---
 class:
