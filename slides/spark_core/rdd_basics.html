@@ -1,7 +1,7 @@
 
 <html>
   <head>
-    <title>RDD概述</title>
+    <title>RDD Basics</title>
     <meta charset="utf-8">
     <style>
       @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
@@ -198,8 +198,8 @@ name:
 .right-column[
 RDD(Resilient Distributed Datasets),弹性分布式数据集，是对分布式内存的抽象。
 <figure class="half">
-    <img src="../../imgs/rdd_basics/rdd-inmemory.png" width="45%" height="40%">
-    <img src="../../imgs/rdd_basics/rdd-itr.png" width="45%"  height="40%">
+    <img src="../../imgs/spark_core/rdd-inmemory.png" width="45%" height="40%">
+    <img src="../../imgs/spark_core/rdd-itr.png" width="45%"  height="40%">
 </figure>
 ]
 
@@ -218,7 +218,7 @@ name:
 #### 血缘
 #### 延迟计算
 <figure class="half">
-    <img src="../../imgs/rdd_basics/rdd-feature.png" width="100%"  height="35%">
+    <img src="../../imgs/spark_core/rdd-feature.png" width="100%"  height="35%">
 </figure>
 
 ]
@@ -245,21 +245,22 @@ transformation：从数据源生成RDD或者对已存在的RDD进行转换生成
 | flatMap(func) | 将records的按照规则进行展开 |
 | mapPartitions(func) | 以RDD的每个分区进行函数计算 |
 | mapPartitionsWithIndex(func) |   对分区操作，提供partitionId参数      |
-| sample(withReplacement, fraction, seed) | 返回一个子集 |
-| intersection(otherDataset) | 返回两个RDD的交集        |
-| distinct([numPartitions])) |   返回一个不包含重复record的数据集      |
 | groupByKey([numPartitions]) | 对(k,v)类型records按照key进行聚合 |
 | reduceByKey(func, [numPartitions]) | 对(k,v)类型records按照key进行合并 |
 | aggregateByKey(zeroValue)(seqOp, combOp,[numPartitions]) |  先对数据按照分区聚合，然后按照key值合并    |
-| sortByKey([ascending], [numPartitions]) | 对(k,v)类型records按照key进行排序 |
-| union(otherDataset) | 直接将两个RDD的分区进行联合 |
-| join(otherDataset, [numPartitions]) | (k,v) join(k,w)=>(k,(v,w))|
-| cogroup(otherDataset, [numPartitions]) |   （k,v) coGroup(k,w)=>(k,seq(v),seq(w))|
-| cartesian(otherDataset) | 笛卡尔积计算 |
 | coalesce(numPartitions) | 重新分区 |
 | repartition(numPartitions) | 重新分区 |
 | repartitionAndSortWithinPartitions(partitioner) | 重新分区，且在分区内进行排序 |
 
+
+<!-- | sample(withReplacement, fraction, seed) | 返回一个子集 |
+| intersection(otherDataset) | 返回两个RDD的交集        |
+| distinct([numPartitions])) |   返回一个不包含重复record的数据集      |
+| sortByKey([ascending], [numPartitions]) | 对(k,v)类型records按照key进行排序 |
+| union(otherDataset) | 直接将两个RDD的分区进行联合 |
+| join(otherDataset, [numPartitions]) | (k,v) join(k,w)=>(k,(v,w))|
+| cogroup(otherDataset, [numPartitions]) |   （k,v) coGroup(k,w)=>(k,seq(v),seq(w))|
+| cartesian(otherDataset) | 笛卡尔积计算 | -->
 
 ]
 
@@ -310,7 +311,7 @@ name:
 
 - 对分区进行混洗(shuffle)
 
-  reduceBykey,aggregataByKey,gropuByKey,repartition,sortByKey
+  reduceBykey,aggregataByKey,gropuByKey,repartition
 
   repartition,repartitionAndSortWithinPartitions
 
@@ -439,7 +440,7 @@ name:
 .right-column[
 
 <figure class="half">
-    <img src="../../imgs/rdd_basics/dependencies.png" width="90%" height="50%">
+    <img src="../../imgs/spark_core/dependencies.png" width="90%" height="50%">
 </figure>
 
 ]
@@ -455,7 +456,7 @@ name:
 .right-column[
 
 <figure class="half">
-    <img src="../../imgs/rdd_basics/shuffle.png" width="72%" height="40%">
+    <img src="../../imgs/spark_core/shuffle.png" width="72%" height="40%">
 </figure>
 
 #### Shuffle是瓶颈所在，shuffle的性能优化十分重要。
@@ -489,7 +490,7 @@ name:
 #### WordCount Lineage
 
 <figure class="half">
-    <img src="../../imgs/rdd_basics/wordcount.png" width="70%" height="35%">
+    <img src="../../imgs/spark_core/wordcount.png" width="70%" height="35%">
 </figure>
 
 - Action触发Job的提交
@@ -523,9 +524,9 @@ name:
   titions性能会更好，因为可以将分区排序放在shuffle过程
 
   <figure class="half">
-    <img src="../../imgs/rdd_basics/repartition-1.png" width="60%" height="30%">
+    <img src="../../imgs/spark_core/repartition-more2less.png" width="60%" height="30%">
     &nbsp; &nbsp;  
-    <img src="../../imgs/rdd_basics/repartition-2.png" width="30%"  height="30%">
+    <img src="../../imgs/spark_core/repartition-less2more.png" width="30%"  height="30%">
 </figure>
 
 
