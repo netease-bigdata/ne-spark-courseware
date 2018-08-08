@@ -213,12 +213,18 @@ name:
 
 ]
 .right-column[
-#### 只读，不可变
-#### 分区
-#### 血缘
+
+#### 弹性
+- 只读，不可变
+
+- 血缘
+
+#### 分布式
+- 分区
+
 #### 延迟计算
 <figure class="half">
-    <img src="../../imgs/spark_core/rdd-feature.png" width="100%"  height="35%">
+    <img src="../../imgs/spark_core/rdd-feature.png" width="100%"  height="30%">
 </figure>
 
 ]
@@ -343,15 +349,15 @@ Action:得到一个结果，或者将RDD存入磁盘。
 
 | Action | Meaning |
 | :----------: | :--------------------------------------: |
-| countByKey() | 返回每个(k,count(k))，即每个key的个数 |
-| reduce(func) | 将所有数据按照func进行聚合 |
-|   take(n)    | 返回数据集的前N个数据 |
+| countByKey() | 返回Map(k,count(k))，即每个key的个数 |
+| reduce(func) | 将所有数据按照func进行聚合，返回一个值 |
+|   take(n)    | 返回数据集的前N个数据的数组 |
 |  collect()   | 将所有数据提取到driver上，转换成一个数组 |
-|   count()    | 获得数据集的数据条数 |
-|   first()    | 返回数据集的第一个数据 |
+|   count()    | 获得数据集的数据条数，一个值 |
+|   first()    | 返回数据集的第一个数据，一个值|
 |foreach(func) | 对每个数据进行操作 |
-| takeOrdered(n, [ordering])  | 返回排序后数据集的前n个数据 |
-| takeSample(withReplacement, num, [seed]) | 根据seed进行抽样，获得num个数据 |
+| takeOrdered(n, [ordering])  | 返回排序后数据集的前n个数据，一个数组 |
+| takeSample(withReplacement, num, [seed]) | 根据seed进行抽样，获得num个数据，一个数组 |
 |  saveAsTextFile(path)  | 保存为text文件 |
 | saveAsObjectFile(path) | 保存为object文件 |
 ]
@@ -374,9 +380,25 @@ name:
 
   mapPartitions算子，调用function10次，但是每次处理一个分区的数据，可能OOM
 
+	```
+    //  rdd:RDD[(Int,Int)]
+    def function1(tuple:(Int,Int)):(Int,Int)={
+      (tuple._1+1,tuple._2+1)
+    }
+    def function2(iterator: Iterator[(Int,Int)]): Iterator[(Int,Int)] ={
+      var list=List[(Int,Int)]()
+      for(i<-iterator){
+        list.::(i._1+1,i._2+1)
+      }
+      list.iterator
+    }
+    rdd.map(function1)
+    rdd.mapPartitions(function2)
+ ```
+
 - 例子：慎重使用collect算子
 
-  collect算子会拉取rdd中所有数据到driver节点，如果数据量过大，会造成driver的OOM，因此collect只适用于拉取小规模(在executor经过处理)的数据
+  collect算子会拉取rdd中所有数据到driver节点，转换成一个数组，如果数据量过大，会造成driver的OOM，因此collect只适用于拉取小规模(在executor经过处理)的数据
 
 <!-- - repartitionandsortwithinpartitions
 
@@ -384,11 +406,12 @@ name:
   titions性能会更好，因为可以将排序放在shuffle过程 -->
 
 
-- 尽量使用reduceByKey代替groupByKey
+<!-- - 尽量使用reduceByKey代替groupByKey
 
   reduceByKey 算子会在map端对数据进行聚合(map-side combine)。
   groupByKey不会在map端进行聚合，会造成在shuffle阶段进行大规模数据传输和在shuffle read端的巨大内存压力。
 
+ -->
 
 ]
 
@@ -408,24 +431,29 @@ name:
 .right-column[
 
 ```
-package sparkApp
-import org.apache.spark.{SparkConf, SparkContext}
-object SparkWC {
+package com.netease.bigdata.spark
 
-  def main(args: Array[String]){
-  val sparkConf = new SparkConf().setAppName(args(0)).setMaster(args(1))
-  val sc = new SparkContext(sparkConf)                                  
-  sc.textFile(args(2))                                                  
-    .flatMap(s => {                                                     
-     val parts = s.split(“\\s+")                                       
-      parts.map((_,1))                                                  
-    })                                                                  
-    .reduceByKey(_+_)                                                   
-    .saveAsTextFile(args(3)) 
-    sc.stop()
+import org.apache.spark.{SparkConf, SparkContext}
+
+object WordCount {
+
+  def main(args: Array[String]): Unit = {
+    require(args.length == 1, "Usage: WordCount <input file>")
+    val conf = new SparkConf().setAppName("Word Count").setMaster("local[*]")
+    val sparkContext = new SparkContext(conf)
+    val textFile = sparkContext.textFile(args(0), 2)
+    val words = textFile.flatMap(_.split(" "))
+    val ones = words.map((_, 1))
+    val counts = ones.reduceByKey(_ + _)
+    val res = counts.collect()
+    for ((word, count) <- res) {
+      println(word + ": " + count)
     }
 
+    sparkContext.stop()
   }
+
+}
 ```
 
 ]
@@ -455,22 +483,25 @@ name:
 ]
 .right-column[
 
+
+#### Shuffle是一个怎样的过程: SortShuffle
+
+- shuffle write端对一个task中的所有数据(对应RDD分区)按照key进行hash计算insert到一个内存中容器(ExternalSorter),可能进行sort
+
+- 将分组(排序)之后的数据写入磁盘，存为一个partitionId索引文件，序列化开销及磁盘I/O。
+
+- shuffle read端拉取(网络传输开销)所有map端写入文件对应partitionId部分数据(反序列化开销)，进行合并(可能存在排序).
+
+- shuffle 阶段(write和read)会尽量把所有数据都insert到内存容器，大量内存占用
+
+- insert阶段和sort阶段，如果内存不足数据会从内存spill到磁盘，大量时间开销。
+
+
+
+
 <figure class="half">
     <img src="../../imgs/spark_core/shuffle.png" width="72%" height="40%">
 </figure>
-
-#### Shuffle是瓶颈所在，shuffle的性能优化十分重要。
-
-- 在shuffle write端对map端的分区按照key的hash值进行分块，每个task写入一个partition索引文件（可能存在排序）。
-
-- 磁盘I/O
-
-- 序列化/反序列化
-
-- 网络传输
-
-- 在shuffle read端拉取各个partition索引文件对应分区的数据（可能存在排序)。
-
 
 
 
