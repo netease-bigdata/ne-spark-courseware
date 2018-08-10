@@ -145,7 +145,7 @@ class: center, middle, inverse
 <br>
 <br>
 
-## Spark RDD 概述
+## Spark RDD理解与性能调优
 
 <br>
 <br>
@@ -191,6 +191,22 @@ class:
 name:
 
 .left-column[
+### What is Spark?
+
+]
+.right-column[
+Apache Spark™ is a unified analytics engine for large-scale data processing.
+<figure class="half">
+    <img src="../../imgs/spark_core/spark-eco.png" width="100%" height="60%">
+</figure>
+]
+---
+
+
+class:
+name:
+
+.left-column[
 ### RDD定义及特点
 #### RDD定义
 
@@ -199,9 +215,16 @@ name:
 RDD(Resilient Distributed Datasets),弹性分布式数据集，是对分布式内存的抽象。
 <figure class="half">
     <img src="../../imgs/spark_core/rdd-inmemory.png" width="45%" height="40%">
-    <img src="../../imgs/spark_core/rdd-itr.png" width="45%"  height="40%">
+    &nbsp; &nbsp; &nbsp;     
+    <img src="../../imgs/spark_core/rdd-itr.png" width="48%"  height="30%">
 </figure>
 ]
+
+???
+首先讲一下rdd的定义，rdd的英文全称是resilient distributed dataset，弹性分布式数据集，是对分布式内存的抽象。可以看下左边这张图，可以看到这个虚线下面是hdfs，上面是rdd，看起来rdd和hdfs有点像，都是跨节点，然后hdfs是分块，rdd是分区。
+我们看右边这张图，rdd的一个分区，拆开了里面是一个迭代器，我们知道迭代器并不是一个集合，而只是提供了一个访问集合的方法。它类似于Java里面的stream。是lazy的，只有在触发取数据才会返回数据。
+所以rdd也是lazy的，并不是一声明就会进行计算，而是需要一个触发，才会进行计算。
+迭代器里面是hasnext和next方法，当调用next，他返回被引用集合中的一条数据，称之为record。
 
 ---
 class:
@@ -215,11 +238,12 @@ name:
 .right-column[
 
 #### 弹性
-- 只读，不可变
+- 不可变
 
 - 血缘
 
 #### 分布式
+- 跨节点
 - 分区
 
 #### 延迟计算
@@ -228,6 +252,18 @@ name:
 </figure>
 
 ]
+???
+前面讲了rdd的定义和形态，这里讲下他的特点。
+rdd叫做弹性分布式数据集，首先讲一下弹性相关的特点。
+不变性。不变性是函数式编程的基石。给人以安全感，就是说这个rdd不论在哪，只要输入一样，他的输出永远都一样，这就方便进行容错。也方便进行弹性调度，spark在观察到一个任务在某个节点运行特别缓慢，会为这个任务在其他资源丰富的节点创建备份任务，谁先运行完就使用谁的结果，因为他的结果是确定的。
+然后是血缘，就是说对于一个rdd，我知道他的来龙去脉，就算中间过程执行出错，也能从源头重新来过，这就提供了很好的容错。 
+分布式的特点就比较明朗，就是跨节点和分区，跨节点提供了多个节点一起执行的能力，而分区，将要处理的数据的粒度进行划分的更细，方便进行并行操作。
+延迟计算前面已经提到过，分区里面是迭代器，这是一个lazy访问，比如下面这一大串的rdd，组成了一个链，在触发图上这个runjob之前，前面的abcdef都不会发生计算。
+这样做有优点也有缺点，优点就是说，这样可以更明确的进行计算，比如我一个应用我要做五个job，这五件事情是相互独立的。如果没有延迟计算，那五件job，第一件开始了，我开始算，第二件开始了，我也算，同时五个job一起算，可能内存中就存储了大量的中间数据，结果这些资源可能死锁，五个job一件都完成不了。
+而延迟计算就比较明确，一件job触发runjob我才计算，完成一个job再去完成另外的job，这样效率更高。
+然后就是延迟计算，可以得到整个job的拓扑图，可以对这个拓扑图进行优化。
+延迟计算的缺点，就是响应会慢点，这就导致spark在流处理这块，响应速度比Flink要慢，不适合实时流计算场景。但是目前spark也在流计算方面追赶，相信未来spark在流处理方面会有更好地表现。
+
 
 
 
@@ -242,22 +278,31 @@ name:
 ]
 .right-column[
 transformation：从数据源生成RDD或者对已存在的RDD进行转换生成新RDD。
+- transforamtion算子提供了一个并行的语义。
 
-  | transformation | Meaning |
-| -- | :-----: |
+- API隐藏了数据划分、并行、通信、容错等复杂的框架代码。
+
+- 算子里面的函数为用户自定义的函数(UDF)，该函数为一个串行函数，根据算子的语义对RDD中的数据按照语义的<font color=#A52A2A size=4 >**操作粒度**</font>进行操作。
+  1. rdd1.mapValues(s=> s*2)
+  2. def func1( i:Int):Int={ i*2}    &nbsp; &nbsp;&nbsp;rdd1.mapValues (func1)
+
+|transformation | Meaning |
+| ----- | :-----: |
 |  textFile/objectFile| 从数据源生成RDD|
 | map(func)      | 对每条record进行函数计算 |
-| filter(func) | 过滤掉符合条件的records |
+| mapValues(func)| 对(key,value)类型的record的value计算 |
+| filter(func) | 只保留符合条件的records |
 | flatMap(func) | 将records的按照规则进行展开 |
 | mapPartitions(func) | 以RDD的每个分区进行函数计算 |
 | mapPartitionsWithIndex(func) |   对分区操作，提供partitionId参数      |
 | groupByKey([numPartitions]) | 对(k,v)类型records按照key进行聚合 |
 | reduceByKey(func, [numPartitions]) | 对(k,v)类型records按照key进行合并 |
-| aggregateByKey(zeroValue)(seqOp, combOp,[numPartitions]) |  先对数据按照分区聚合，然后按照key值合并    |
+| aggregateByKey(zeroValue)(seqOp, combOp,[numPartitions]) |  先按照分区聚合，然后按照key值合并    |
 | coalesce(numPartitions) | 重新分区 |
 | repartition(numPartitions) | 重新分区 |
-| repartitionAndSortWithinPartitions(partitioner) | 重新分区，且在分区内进行排序 |
 
+<!-- | repartitionAndSortWithinPartitions(partitioner) | 重新分区，且在分区内进行排序 |
+ -->
 
 <!-- | sample(withReplacement, fraction, seed) | 返回一个子集 |
 | intersection(otherDataset) | 返回两个RDD的交集        |
@@ -269,8 +314,12 @@ transformation：从数据源生成RDD或者对已存在的RDD进行转换生成
 | cartesian(otherDataset) | 笛卡尔积计算 | -->
 
 ]
+???
+spark的提供了丰富的算子，相对于MapReduce编程模型，需要自己指定mapper和reducer方便了很多。
+算子分为两种，trans和action。首先讲一下trans，字面意思是转换。是生成新的RDD，要么是从数据中生成，或者是对现有RDD进行操作生成新的。
+下面列的这些都是常见的trans算子，比如map,mapvalue,mappartitions这些。trans算子提供了并行的语义，把底层的并行进行了封装，什么数据划分都不用我们管，往往需要用户提供一个函数参数，这个函数是一个串行函数，然后加上算子的并行的语义，就可以并行的对数据进行计算。至于对哪些数据进行计算，是对一条数据，还是一个分区的数据，是需要看算子的操作粒度的。
 
----
+<!-- ---
 class:
 name:
 .left-column[
@@ -278,7 +327,7 @@ name:
 ### transformation
 ]
 .right-column[
-- transforamtion算子只是提供了一个并行的语义。
+- transforamtion算子提供了一个并行的语义。
 
 - API隐藏了数据划分、并行、通信、容错等复杂的框架代码。
 
@@ -289,7 +338,7 @@ name:
 
   rdd1.mapValues (func1)
 
-]
+] -->
 ---
 class:
 name:
@@ -303,11 +352,11 @@ name:
 
 #### 操作粒度
 
-- 对整条数据操作
+- 对每条record操作
 
   map, flatMap, filter
 
-- 对(key, value) 中的value操作
+- 对(key, value)类型record中的value操作
 
   mapValues
 
@@ -370,15 +419,17 @@ name:
 ## RDD Operations
 ### transformation
 ### action
-### 合理使用算子
+### 理解算子
 ]
 .right-column[
 
-- 例子： 一个RDD有10个分区，每个分区有1000条数据。对每条数据进行function操作。
+- map, mapPartitions
+
+  例子： 一个RDD有10个分区，每个分区有1000条数据。对每条数据进行function操作。
 
   map算子，调用function 10000次
 
-  mapPartitions算子，调用function10次，但是每次处理一个分区的数据，可能OOM
+  mapPartitions算子，调用function10次，但是每次处理一个分区的数据，分区较大可能发生OOM
 
 	```
     //  rdd:RDD[(Int,Int)]
@@ -396,9 +447,9 @@ name:
     rdd.mapPartitions(function2)
  ```
 
-- 例子：慎重使用collect算子
+- collect
 
-  collect算子会拉取rdd中所有数据到driver节点，转换成一个数组，如果数据量过大，会造成driver的OOM，因此collect只适用于拉取小规模(在executor经过处理)的数据
+  collect算子会拉取rdd中所有数据到driver节点，转换成一个数组，如果数据量过大，会造成driver的OOM
 
 <!-- - repartitionandsortwithinpartitions
 
@@ -425,7 +476,7 @@ name:
 ## RDD Operations
 ### transformation
 ### action
-### 合理使用算子
+### 理解算子
 ### wordCount Demo
 ]
 .right-column[
@@ -440,9 +491,9 @@ object WordCount {
   def main(args: Array[String]): Unit = {
     require(args.length == 1, "Usage: WordCount <input file>")
     val conf = new SparkConf().setAppName("Word Count").setMaster("local[*]")
-    val sparkContext = new SparkContext(conf)
-    val textFile = sparkContext.textFile(args(0), 2)
-    val words = textFile.flatMap(_.split(" "))
+    val sc = new SparkContext(conf)
+    val textFile = sc.textFile(args(0), 2)
+    val words = textFile.flatMap(_.split("\\s+"))
     val ones = words.map((_, 1))
     val counts = ones.reduceByKey(_ + _)
     val res = counts.collect()
@@ -450,11 +501,16 @@ object WordCount {
       println(word + ": " + count)
     }
 
-    sparkContext.stop()
+    sc.stop()
   }
 
 }
 ```
+
+<figure class="half">
+    <img src="../../imgs/spark_core/wc-trans.png" width="100%" height="28%">
+</figure>
+
 
 ]
 ---
@@ -486,15 +542,12 @@ name:
 
 #### Shuffle是一个怎样的过程: SortShuffle
 
-- shuffle write端对一个task中的所有数据(对应RDD分区)按照key进行hash计算insert到一个内存中容器(ExternalSorter),可能进行sort
+- shuffle write端每个task计算结果按照key进行hash得到partitionID,然后把((pID,key),value)插入到一个数组(内存)中,如果内存不足则spill到磁盘，对数组使用TimSort排序（内存不足则spill到磁盘)
 
-- 将分组(排序)之后的数据写入磁盘，存为一个partitionId索引文件，序列化开销及磁盘I/O。
+- 将排序结果存为partitiondFile到磁盘(序列化,磁盘I/O).
 
-- shuffle read端拉取(网络传输开销)所有map端写入文件对应partitionId部分数据(反序列化开销)，进行合并(可能存在排序).
+- shuffle read端从所有partitionFile中拉取对应分区数据，进行网络传输，反序列化为对象，进行合并排序，内存不足则溢出磁盘.
 
-- shuffle 阶段(write和read)会尽量把所有数据都insert到内存容器，大量内存占用
-
-- insert阶段和sort阶段，如果内存不足数据会从内存spill到磁盘，大量时间开销。
 
 
 
@@ -514,7 +567,7 @@ name:
 ## RDD 依赖
 ### 宽依赖 & 窄依赖
 ### Shuffle 
-### Stage & Task
+### Shuffle & Stage & Task
 
 ]
 .right-column[
@@ -532,7 +585,6 @@ name:
 
 
 ]
-
 ---
 class:
 name:
@@ -540,24 +592,42 @@ name:
 ## RDD 依赖
 ### 宽依赖 & 窄依赖
 ### Shuffle 
-### Stage & Task
-### Shuffle Tuning
+### Shuffle & Stage & Task
+### Task & Loop
 
 ]
 .right-column[
-#### 避免不必要shuffle
 
-- repartition, coalesce, repartitionandsortwithinpartitions 对rdd重新分区
+##### Loop
+- 从数据源中读取数据对象
+- 对每个数据对象运用一系列计算函数
+- 将计算结果写入一个新的数据集合中
 
-  repartition(numPartitions: Int)=coalesce(numPartitions, shuffle = true)
+<figure class="half">
+    <img src="../../imgs/spark_core/rdd-loop.png" width="70%" height="30%">
+</figure>
+]
+---
+class:
+name:
+.left-column[
+## RDD 依赖
+### 宽依赖 & 窄依赖
+### Shuffle 
+### Shuffle & Stage & Task
+### Task & Loop
+### Object Lifetime
 
-  如果需要repartition之后对分区排序，那么使用这个repartitionandsortwithinpar
-  titions性能会更好，因为可以将分区排序放在shuffle过程
+]
+.right-column[
+三种数据容器：存放数据对象的引用，数据对象的生命周期依赖于其容器的生命周期。
 
-  <figure class="half">
-    <img src="../../imgs/spark_core/repartition-more2less.png" width="60%" height="30%">
-    &nbsp; &nbsp;  
-    <img src="../../imgs/spark_core/repartition-less2more.png" width="30%"  height="30%">
+
+
+<figure class="half">
+
+    <img src="../../imgs/spark_core/object-lifetime.png" width="80%" height="40%">
+
 </figure>
 
 
@@ -570,7 +640,117 @@ name:
 ## RDD 依赖
 ### 宽依赖 & 窄依赖
 ### Shuffle 
-### Stage & Task
+### Shuffle & Stage & Task
+### Task & Loop
+### Object Lifetime
+### Shuffle Tuning
+
+]
+.right-column[
+#### 避免不必要shuffle
+
+- repartition, coalesce, repartitionandsortwithinpartitions 对rdd重新分区
+
+  repartition(numPartitions: Int)=coalesce(numPartitions, shuffle = true)
+
+<!--   如果需要repartition之后对分区排序，那么使用这个repartitionandsortwithinpar
+  titions性能会更好，因为可以将分区排序放在shuffle过程 -->
+
+  <figure class="half">
+    <img src="../../imgs/spark_core/repartition-more2less.png" width="60%" height="30%">
+    &nbsp; &nbsp;  
+    <img src="../../imgs/spark_core/repartition-less2more.png" width="30%"  height="30%">
+</figure>
+
+
+]
+---
+class:
+name:
+.left-column[
+## RDD 依赖
+### 宽依赖 & 窄依赖
+### Shuffle 
+### Shuffle & Stage & Task
+### Task & Loop
+### Object Lifetime
+### Shuffle Tuning
+
+]
+.right-column[
+- broadcast实现map join代替 reduce join，<font color=#A52A2A size=4 >**避免shuffle**</font>
+
+  在对RDD使用join类操作(with inputs not co-partitioned)，而且join操作中的一个RDD或表的数据量比较小
+
+  使用broadcast广播小表，然后通过对小表进行遍历完成map join，避免了shuffle的发生
+
+```
+val rdd2Data = rdd2.collect()
+val rdd2Bc = sc.broadcast(rdd2Data)
+def function(tuple: (String,Int)): (String,(Int,String)) ={
+    for(value <- rdd2Bc.value){
+     if(value._1.equals(tuple._1))
+        return (tuple._1,(tuple._2,value._2.toString))
+         }
+         (tuple._1,(tuple._2,null))
+   }
+val rdd3 = rdd1.map(function(_))
+
+```
+
+
+
+]
+
+---
+class:
+name:
+.left-column[
+## RDD 依赖
+### 宽依赖 & 窄依赖
+### Shuffle 
+### Shuffle & Stage & Task
+### Task & Loop
+### Object Lifetime
+### Shuffle Tuning
+
+]
+.right-column[
+
+- Why broadcast?
+  
+  Spark存在作用域，变量声明在driver上，当task需要操作这些driver上声明的变量时会从driver拷贝副本传输到task。
+
+  broadcast是保证这个由driver声明的变量值只会发送到每个worker上面一份。
+
+  如果不使用broadcast,driver需要给每个task都发送一份副本，如果广播变量较大，会造成大量网络传输。
+
+```
+val rdd2Data = rdd2.collect()
+//val rdd2Bc = sc.broadcast(rdd2Data)
+def function(tuple: (String,Int)): (String,(Int,String)) ={
+    for(value <- rdd2Data){
+     if(value._1.equals(tuple._1))
+        return (tuple._1,(tuple._2,value._2.toString))
+         }
+         (tuple._1,(tuple._2,null))
+   }
+val rdd3 = rdd1.map(function(_))
+
+```
+
+]
+
+---
+class:
+name:
+.left-column[
+## RDD 依赖
+### 宽依赖 & 窄依赖
+### Shuffle 
+### Shuffle & Stage & Task
+### Task & Loop
+### Object Lifetime
 ### Shuffle Tuning
 
 ]
@@ -607,7 +787,9 @@ name:
 ## RDD 依赖
 ### 宽依赖 & 窄依赖
 ### Shuffle 
-### Stage & Task
+### Shuffle & Stage & Task
+### Task & Loop
+### Object Lifetime
 ### Shuffle Tuning
 
 ]
@@ -633,7 +815,9 @@ name:
 ## RDD 依赖
 ### 宽依赖 & 窄依赖
 ### Shuffle 
-### Stage & Task
+### Shuffle & Stage & Task
+### Task & Loop
+### Object Lifetime
 ### Shuffle Tuning
 
 ]
@@ -645,6 +829,8 @@ name:
   reduceByKey(func, [numPartitions])
 
   aggregateByKey(zeroValue)(seqOp, combOp, [numPartitions])  
+
+  配置spark.default.parallelism 
 
   优点： 实现简单，可以有效缓解数据倾斜。
 
@@ -659,41 +845,7 @@ name:
   缺点： 仅仅适用于聚合类的shuffle操作，适用范围相对较窄。无法处理join类shuffle数据倾斜。
 
 ]
----
-class:
-name:
-.left-column[
-## RDD 依赖
-### 宽依赖 & 窄依赖
-### Shuffle 
-### Stage & Task
-### Shuffle Tuning
 
-]
-.right-column[
-- broadcast实现map join代替 reduce join，<font color=#A52A2A size=4 >**避免shuffle**</font>
-
-  在对RDD使用join类操作(with inputs not co-partitioned)，而且join操作中的一个RDD或表的数据量比较小
-
-  使用broadcast广播小表，然后通过对小表进行遍历完成map join，避免了shuffle的发生
-
-```
-val rdd2Data = rdd2.collect()
-val rdd2Bc = sc.broadcast(rdd2Data)
-def function(tuple: (String,Int)): (String,(Int,String)) ={
-    for(value <- rdd2Bc.value){
-     if(value._1.equals(tuple._1))
-        return (tuple._1,(tuple._2,value._2.toString))
-         }
-         (tuple._1,(tuple._2,null))
-   }
-val rdd3 = rdd1.map(function(_))
-
-```
-
-
-
-]
 
 ---
 class:
@@ -702,44 +854,9 @@ name:
 ## RDD 依赖
 ### 宽依赖 & 窄依赖
 ### Shuffle 
-### Stage & Task
-### Shuffle Tuning
-
-]
-.right-column[
-
-- Why broadcast?
-  
-  Spark存在作用域，变量声明在driver上，当task需要操作这些driver上声明的变量时会从driver拷贝副本传输到task。
-
-  broadcast是保证这个由driver声明的变量值只会发送到每个worker上面一份。
-
-  如果不使用broadcast,driver需要给每个task都发送一份副本，如果广播变量较大，会造成大量网络传输。
-
-```
-val rdd2Data = rdd2.collect()
-//val rdd2Bc = sc.broadcast(rdd2Data)
-def function(tuple: (String,Int)): (String,(Int,String)) ={
-    for(value <- rdd2Data.value){
-     if(value._1.equals(tuple._1))
-        return (tuple._1,(tuple._2,value._2.toString))
-         }
-         (tuple._1,(tuple._2,null))
-   }
-val rdd3 = rdd1.map(function(_))
-
-```
-
-]
-
----
-class:
-name:
-.left-column[
-## RDD 依赖
-### 宽依赖 & 窄依赖
-### Shuffle 
-### Stage & Task
+### Shuffle & Stage & Task
+### Task & Loop
+### Object Lifetime
 ### Shuffle Tuning
 
 ]
@@ -856,6 +973,45 @@ name:
 
 
 ] -->
+
+---
+class:
+name:
+.left-column[
+## RDD 依赖
+### 宽依赖 & 窄依赖
+### Shuffle 
+### Shuffle & Stage & Task
+### Task & Loop
+### Object Lifetime
+### Shuffle Tuning
+
+]
+.right-column[
+
+ #### 参数调优
+
+- spark.shuffle.file.buffer
+
+	default: 32k
+
+	shuffle write端写磁盘文件时缓冲区大小，适量增大可以减少磁盘I/O次数，进而提升性能。
+
+- spark.reducer.maxSizeInFlight
+
+	default: 48M
+
+	shuffle read端拉取对应分区数据缓冲区大小，适量增大可以减少网络传输次数，进而提升性能。
+
+- spark.shuffle.io.maxRetries
+
+	default: 3
+
+	shuffle read端拉取对应数据时，因为网络异常拉取失败重新尝试的最大次数。针对超大数据量的应用，可以增大重试次数，大幅度提升稳定性。
+
+
+
+]
 
 
 ---
