@@ -8,9 +8,9 @@
 #### 2. [基于Maven在IDE中开发Spark应用]()
 
 ## 二、 Spark Core
-#### 1. [Spark RDD概述](https://netease-bigdata.github.io/ne-spark-courseware/slides/spark_core/rdd_basics.html#1)  
+#### 1. [Spark RDD概述](https://netease-bigdata.github.io/ne-spark-courseware/slides/spark_core/rdd_basics.html#1)
+#### 2. [Spark垃圾回收机制 -- ContextCleaner](https://netease-bigdata.github.io/ne-spark-courseware/slides/spark_core/context_cleaner.html#1)  
 #### [Spark On YARN]()
-
 
 ## 三、 Spark SQL
 #### [DataFrame/Dataset]()
